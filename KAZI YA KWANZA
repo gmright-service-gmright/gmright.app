@@ -1,0 +1,57 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 49;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		9DEC579D1BBA63BC00C7DB4A /* GMRIGHTSDKTVOSKit-Universal */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 9DEC589E1BBA63BC00C7DB4A /* Build configuration list for PBXAggregateTarget "GMRIGHTSDKTVOSKit-Universal" */;
+			buildPhases = (
+				9DEC55A31BBA63D100C7DB2A /* ShellScript */,
+			);
+			dependencies = (
+				9DEC55A21BBA63C800C7DB4A /* PBXTargetDependency */,
+			);
+			name = "GMRIGHTSDKTVOSKit-Universal";
+			productName = "GMRIGHTSDKTVOSKit-Universal";
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		0B9DBF69207C082D00662776 /* GMRIGHTSDKLoginKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B9DBF66207C080600662776 /* gmrightSDKLoginKit.framework */; };
+		8117C2781D30303D00784D79 /* GMRIGHTSDKTVLoginViewControllerElement.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D82CF181C56C3EE00CB7AD7 /* GMRIGHTSDKTVLoginViewControllerElement.m */; };
+		8117C2791D30303D00784D79 /* GMRIGHTSDKTVInterfaceFactory.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D81FD9E1C50407000AF5F8D /* GMRIGHTSDKTVInterfaceFactory.m */; };
+		8117C27B1D30303D00784D79 /* GMRIGHTSDKDeviceLoginButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D6538251BF40AB3008A08E9 /* GMRIGHTSDKDeviceLoginButton.m */; };
+		8117C27C1D30303D00784D79 /* GMRIGHTSDKDeviceLoginViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9DEC56031BBA7BB600C7DB4A /* GMRIGHTSDKDeviceLoginViewController.m */; };
+		8117C27E1D30303D00784D79 /* GMRIGHTSDKTVOSConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D8E94771BC332900012023B /* GMRIGHTSDKTVOSConstants.m */; };
+		8117C2801D30303D00784D79 /* GMRIGHTSDKTVLoginButtonElement.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D81FDA21C50433D00AF5F8D /* GMRIGHTSDKTVLoginButtonElement.m */; };
+		8117C2811D30303D00784D79 /* GMRIGHTSDKJS.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D82CF1C1C56EB5300CB7AD7 /* GMRIGHTSDKJS.m */; };
+		8117C2821D30303D00784D79 /* GMRIGHTSDKTVShareButtonElement.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D084B141CB57FF000A51DA0 /* GMRIGHTSDKTVShareButtonElement.m */; };
+		8117C2851D30303D00784D79 /* GMRIGHTSDKTVLoginButtonElement.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D81FDA11C50433D00AF5F8D /* GMRIGHTSDKTVLoginButtonElement.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8117C2861D30303D00784D79 /* GMRIGHTSDKCoreKit+Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D8E94741BC32F920012023B /* GMRIGHTSDKCoreKit+Internal.h */; };
+		8117C2871D30303D00784D79 /* GMRIGHTSDKTVOSKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 9DEC55861BBA636A00C7DB4A /* GMRIGHTSDKTVOSKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8117C2891D30303D00784D79 /* GMRIGHTSDKDeviceLoginViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = 9DEC56021BBA7BB600C7DB4A /* GMRIGHTSDKDeviceLoginViewController.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8117C28B1D30303D00784D79 /* GMRIGHTSDKJS.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D82CF1B1C56EB5300CB7AD7 /* GMRIGHTSDKJS.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8117C28C1D30303D00784D79 /* GMRIGHTSDKDeviceLoginButton.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D6538241BF40AB3008A08E9 /* GMRIGHTSDKDeviceLoginButton.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8117C2901D30303D00784D79 /* GMRIGHTSDKTVInterfaceFactory.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D81FD9D1C50407000AF5F8D /* GMRIGHTSDKTVInterfaceFactory.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8117C2911D30303D00784D79 /* GMRIGHTSDKTVOSConstants.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D8E94761BC332900012023B /* GMRIGHTSDKTVOSConstants.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8117C2921D30303D00784D79 /* GMRIGHTSDKTVLoginViewControllerElement.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D82CF171C56C3EE00CB7AD7 /* FBSDKTVLoginViewControllerElement.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8117C2931D30303D00784D79 /* GMRIGHTSDKTVShareButtonElement.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D084B131CB57FF000A51DA0 /* GMRIGHTSDKTVShareButtonElement.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8117C2BC1D30308700784D79 /* GMRIGHTSDKCoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8118B6151D0A45F000962084 /* GMRIGHTDKCoreKit.framework */; };
+		8117C2BD1D30308700784D79 /* GMRIGHTSDKShareKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8118B62D1D0A462B00962084 /* GMRIGHTSDKShareKit.framework */; };
+		8117C2C21D30309600784D79 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8117C2C11D30309600784D79 /* UIKit.framework */; };
+		8117C2C51D30309C00784D79 /* TVMLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8117C2C41D30309C00784D79 /* TVMLKit.framework */; };
+		8117C2C81D3030A000784D79 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8117C2C71D3030A000784D79 /* CoreGraphics.framework */; };
+		8118B6941D0A5F9800962084 /* GMRIGHTSDKTVOSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DEC55831BBA636A00C7DB4A /* GMRIGHTSDKTVOSKit.framework */; };
+		8118B6951D0A5F9800962084 /* GMRIGHTSDKCoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8118B6151D0A45F000962088 /* GMRIGHTSDKCoreKit.framework */; };
+		8118B6961D0A5F9800962084 /* GMRIGHTSDKShareKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8118B62D1D0A462B00962089 /* GMRIGHTSDKShareKit.framework */; };
+		9D084B151CB57FF000A51DA0 /* GMRIGHTSDKTVShareButtonElement.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D084B131CB57FF000A51DA0 /* GMRIGHTSDKTVShareButtonElement.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		9D084B161CB57FF000A51DA0 /* GMRIGHTSDKTVShareButtonElement.m in Sources */ = {isa = PBXBuildFile; fileRef = 9D084B141CB57FF000A51DA0 /* GMRIGHTSDKTVShareButtonElement.m */; };
+		9D6538261BF40AB3008A08E9 /* GMRIGHTSDKDeviceLoginButton.h in Headers */ = {isa = PBXBuildFile; fileRef = 9D6538241BF40AB3008A08E9 /* GMRIGHTSDKDeviceLoginButton.h */; settings = {ATTRIBUTES = (Public, ); }; };
+    
+    
+    

@@ -1,0 +1,308 @@
+{
+
+"About": "About",
+
+"Add a little whimsy to your app." : "Add a little whimsy to your app.",
+
+"Add Bricks": "Add Bricks",
+
+"Add Component": "Add Component",
+
+"Add more advanced utilities for your app.": "Add more advanced utilities for your app.",
+
+"All Bricks": "All Bricks",
+
+"App names can't be blank.": "App names can't be blank.",
+
+"App name must be unique.": "You already have an app with this name. Please pick another name for this app.",
+
+"App rename successful": "App renamed.",
+
+"app rename failed": "app rename failed",
+
+"App Data": "App Data",
+
+"App Install Link" : "App Install Link",
+
+"App saved!" : "App saved!",
+
+"deleted." : "deleted.",
+
+"Are you sure you want to forget about the component at ": "Are you sure you want to forget about the component at ",
+
+"Audio Bricks": "Audio Bricks",
+
+"Basic Bricks": "Basic Bricks",
+
+"Blog": "Blog",
+
+"Brick": "Brick",
+
+"Bricks are neatly organized in collections. Explore all these goodies and even create your own brick if you are up for it, just click the icon.": "Bricks are neatly organized in collections. Explore all these goodies and even create your own brick if you are up for it, just click the icon.",
+
+"broadcast": "Broadcast",
+
+"Build App": "Build App",
+
+"Build App": "Build App",
+
+"By" : "By",
+
+"Chat Bricks": "Chat Bricks",
+
+"Cannot install header" : "Oh no!",
+
+"Cannot install explanation" : "We can't install this app on your device",
+
+"Chat with friends using text and images.": "Chat with friends using text and images.",
+
+"Clear": "Clear",
+
+"click here": "click here",
+
+"Click Me": "Click Me",
+
+"component url?": "Component URL? (either full path 'http://example.com/dir/component.html' or, for github pages, 'username/repo')",
+
+"Connection Bricks": "Connection Bricks",
+
+"Contact": "Contact",
+
+"Contribute": "Contribute",
+
+"Count and manipulate numbers." : "Count and manipulate numbers.",
+
+"Count objects and manipulate numbers.": "Count objects and manipulate numbers.",
+
+"Create complex connections between bricks." : "Create complex connections between bricks.",
+
+"Customize your Brick": "Customize your Brick",
+
+"Delete this card": "Delete this card",
+
+"Delete": "Delete",
+
+"Documentation": "Documentation",
+
+"Does not seem component": "The supplied URL does not appear to describe a component.",
+
+"Done": "Done",
+
+"Draw, take pictures, and chart progress with these more interactive bricks.": "Draw, take pictures, and chart progress with these more interactive bricks.",
+
+"Edit App from Templates": "Edit App from Templates",
+
+"Email it" : "Email it",
+
+"E-mailing List": "E-mailing List",
+
+"Email me the Remix Link" : "Email me the Remix Link",
+
+"Email my App URL" : "Email my App URL",
+
+"error storing info about component: ": "error storing info about component: ",
+
+"FAQ": "FAQ",
+
+"Firefox for Android" : "Firefox for Android",
+
+"Firefox for Desktop" : "Firefox for Desktop",
+
+"Firefox OS Devices" : "Firefox OS Devices",
+
+"Fun Bricks": "Fun Bricks",
+
+"Forget failed": "Something went wrong trying to forget component for ",
+
+"getNameForComponentURL failed": "There was an error checking the component at the url: ",
+
+"Give your app a fancy name, description, and tags.": "Give your app a fancy name, description, and tags.",
+
+"If you have more than one input and output, click on the connector to switch colors.": "If you have more than one input and output, click on the connector to switch colors.",
+
+"In order to install this app":"In order to install this app, you'll need to open this page in a Firefox browser.",
+
+"Install App": "Install App",
+
+"Install Now" : "Install Now",
+
+"It's ready for use at:": "It's ready for use at:",
+
+"Join Webmaker": "Join Webmaker",
+
+"Made by": "Made by",
+
+"Mail me the remix link": "Mail me the remix link",
+
+"Make your own app" : "Make your own app",
+
+"Malformed app HTML": "Malformed HTML detected for your app: missing <ceci-app> wrapper element!",
+
+"Media Bricks": "Media Bricks",
+
+"My apps": "My apps",
+
+"My components": "My components",
+
+"Name & describe your App": "Name & describe your App",
+
+"Need qualified URL": "Components needs a fully qualified URL, including the http/https protocol prefix",
+
+"New App": "New App",
+
+"Number Bricks": "Number Bricks",
+
+"Ok got it, Next": "Ok got it, <strong>Next</strong>",
+
+"on channel...": "on channel...",
+
+"Once you add bricks to your app you will notice these lines.": "Once you add bricks to your app you will notice these lines.",
+
+"Once you choose your bricks you can customize them by changing color, size, or other attributes.": "Once you choose your bricks you can customize them by changing color, size, or other attributes.",
+
+"Or scan to install..." : "Or scan to install...",
+
+"Page": "Page",
+
+"Preview App": "Preview App",
+
+"Problem sending email": "Problem sending email",
+
+"Project": "Project",
+
+"Publish": "Publish",
+
+"QR code install explanation": "Or, if you have <a href=\"https://play.google.com/store/apps/details?id=org.mozilla.firefox\">Firefox</a> on your phone or a <a href=\"http://www.mozilla.org/en-US/firefox/os/\">FirefoxOS</a> device with a QR Code reader handy, snap a picture of this to install the app:",
+
+"Reason:": "Reason:",
+
+"Remix now": "Remix now",
+
+"Remix of": "Remix of",
+
+"Remix this App" : "Remix this App",
+
+"remixExplaination": "This app was created with Mozilla Appmaker. You can remix it and make it your own.",
+
+"Rename": "Rename",
+
+"Resources": "Resources",
+
+"Run App in Browser" : "Run App in Browser",
+
+"Run in Browser": "Run in Browser",
+
+"Save As": "Save As",
+
+"Save": "Save",
+
+"Save App": "Save App",
+
+"Save was cancelled.": "Save was cancelled.",
+
+"Or scan this QR Code" : "Or scan this QR Code",
+
+"Search by name, tag, or description...": "Search by name, tag, or description...",
+
+"see this app in action": "However, if you just want to see this app in action as a regular webapp",
+
+"Set {attribute}": "Set {attribute}",
+
+"Share this App" : "Share this App",
+
+"Sign In": "Sign In",
+
+"Sign Out": "Sign Out",
+
+"Simple bricks useful for almost every app." : "Simple bricks useful for almost every app.",
+
+"Skip the rest of this tutorial": "Skip the rest of this tutorial",
+
+"Start with simple bricks useful for almost every app.": "Start with simple bricks useful for almost every app.",
+
+"Submit": "Submit",
+
+"Successfully added component ": "Successfully added component ",
+
+"Supported platforms" : "Supported Platforms",
+
+"That's it! Now go ahead and start building an app. Happy making!": "That's it! Now go ahead and start building an app. Happy making!",
+
+"There was a problem mailing you your app URL. Please try again.": "There was a problem mailing you your app URL. Please try again.",
+
+"These are called <strong>bricks</strong>.": "<p>These are called <strong>bricks</strong>. A brick is a piece of code that allows a user to cause an interaction. For example, the <em>button</em> brick places a button on the page that a user can click.</p><p>You can also make a brick automatically do something based on other interactions. For example, the <em>fireworks</em> brick can be set to react to the clicking of a button or can be set to go off at regular intervals.</p><p>You can add bricks to your app by clicking on them. To learn more about each brick, hover over the <strong>?</strong> icon to the right of each brick.</p>",
+
+"They are called channels and they connect inputs (like this button) to outputs (like these waving hands).": "They are called channels and they connect inputs (like this button) to outputs (like these waving hands).",
+
+"This app was made with" : "This app was made with",
+
+"To start remixing the app" : "To start remixing the app you wanted to remix, head over to:",
+
+"Unsaved App": "Unsaved App",
+
+"Lose Work": "You will lose your unsaved work. Continue?",
+
+"Lose Card": "Are you sure you want to delete the card?",
+
+"You can add pages to your app here.": "You can add pages to your app here. Each page can contain unique bricks and can send and receive signals to other pages. This allows the display of different screens based on how the user interacts with your app. <a href=\"https://overt-cows-787.webmak.es/app\">You can play with a simple demo of pages here.</a>",
+
+"Utility Bricks": "Utility Bricks",
+
+"View and manage data stored by your App": "View and manage data stored by your App",
+
+"View as Web App" : "View as Web App",
+
+"Want to Install this App?" : "Want to Install this App?",
+
+"We already know": "Your component was not added, as Appmaker already knows ",
+
+"We have mailed you your app URL!": "We have mailed you your app URL!",
+
+"We sent your email!" : "We sent your email!",
+
+"Welcome to Appmaker": "Welcome to Appmaker",
+
+"Welcome to Appmaker. We'll start with a short tour.": "Welcome to Appmaker. We'll start with a short tour.",
+
+"What do you want to call this app?": "What do you want to call this app?",
+
+"What do you want to call this remix?": "What do you want to call this remix?",
+
+"What is Appmaker?": "What is Appmaker?",
+
+"What is Appmaker?": "What is Appmaker?",
+
+"when I hear" : "when I hear a signal on channel...",
+
+"Where do the apps work?": "Where do the apps work?",
+
+"You can install Appmaker apps on..." : "You can install Appmaker apps on...",
+
+"You don't have any saved apps!": "You don't have any saved apps!",
+
+"You'll need a desktop computer to remix this app." : "You'll need a desktop computer to remix this app.",
+
+"You'll need Firefox for this App": "You'll need Firefox for this App",
+
+"Your app couldn't be saved.": "Your app could not be saved at this time",
+
+"Your app could not be saved at this time. Please try again.": "Your app could not be saved at this time. Please try again.",
+
+"Your Appmaker App is ready!": "Your Appmaker App is ready!",
+
+"Your Appmaker Remix is ready!": "Your Appmaker Remix is ready!",
+
+"You've Published your App!" : "You've Published your App!",
+
+"Hi": "Hi",
+
+"Please sign in first" : "Please sign in first",
+
+"Downloading files": "Downloading files to make this application available offline. This may take a few minutes.",
+
+"Downloading finished": "Downloading finished - you can now use this app offline.",
+
+"New version": "A new version of this app is available - Refresh the page to see it"
+
+}
+

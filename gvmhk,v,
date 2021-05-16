@@ -1,0 +1,17 @@
+Force:source-verification-of-demo
+
+Force:sourcd-verify
+
+Force:active
+
+Force:verification_domen-name(gmright)
+
+Force:verification_domen-bsme(www.www.gmright.org)or(www.gmright.org)
+
+Force:active_source-domen mane:"gmright"
+
+Fileswrite"6"
+
+Fileswrite"verifications"
+
+Fileswrite"name:"gmright"

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+
+<!-- @ConQAT.Rating GREEN Hash: 49AA661A06CB9AC775DF1757D1716493-->
+
+
+
+<!--
+
+  Copyright (c) 2011 Michael Kanis
+
+  
+
+  This file is part of WifiSync.
+
+ 
+
+  WifiSync is free software: you can redistribute it and/or modify
+
+  it under the terms of the GNU General Public License as published by
+
+  the Free Software Foundation, either version 3 of the License, or
+
+  (at your option) any later version.
+
+  
+
+  WifiSync is distributed in the hope that it will be useful,
+
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+
+  along with WifiSync.  If not, see <http://www.gnu.org/licenses/>.
+
+ -->
+
+
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+
+	package="net.skweez.wifisync" android:versionCode="1"
+
+	android:versionName="1.0">
+
+	<uses-sdk android:minSdkVersion="5"/>
+
+
+
+	<application android:label="@string/app_name" android:icon="@drawable/ic_launcher_wifisync">
+
+
+
+		<receiver android:name=".SyncOnWifiStateReceiver">
+
+			<intent-filter>
+
+				<!-- Used when the device (dis-)connects to WiFi. -->
+
+				<action android:name="android.net.wifi.STATE_CHANGE" />
+
+
+
+				<!-- Used when user disables WiFi. The above broadcast is not sent in 
+
+					that case. -->
+
+				<action android:name="android.net.wifi.WIFI_STATE_CHANGED" />
+
+			</intent-filter>
+
+		</receiver>
+
+
+
+	</application>
+
+
+
+	<!-- Needed to change the sync setting. -->
+
+	<uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
+
+</manifest>

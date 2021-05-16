@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<title>Resume</title>
+
+<link rel="stylesheet" type="text/css" href="./stylesheet.css">
+
+</head>
+
+<body class="resume">
+
+<a href="./index.html">Back</a>
+
+<div class="wrap">
+
+<h2> Joshua Aaron Hjelmaas </h2>
+
+<div class="contactinfo">
+
+<br>
+
+321 S. Linn Street, Apt. 322, Iowa City, IA 52240
+
+<br>
+
+(515) 343-6998; joshua-hjelmaas@uiowa.edu
+
+</div>
+
+<hr>
+
+<br><br>
+
+<h3>EDUCATION</h3>
+
+<br>
+
+B.B.A. Business Analytics and Information Systems, May 2018
+
+<br>
+
+The University of Iowa, Iowa City, IA
+
+<br>
+
+	 Minor: Spanish
+
+<br>
+
+	 Certificate: International Business
+
+<br>
+
+	 Cumulative GPA: 3.90/4.0
+
+<br>
+
+	 Dean’s List: Fall 2014, Spring 2015, Fall 2015, Spring 2016, Fall 2016, Spring 2017
+
+<br>
+
+	 President’s List: Fall 2016
+
+<br>
+
+	 Scholarships:
+
+<br>
+
+<ul>
+
+<li>2017 Bell Business/Computer Science Scholarship
+
+<li>2016/2017 Robert A. Young, Sr. Memorial Scholarship
+
+<li>2015 Fred and Charlotte Hubbell Scholarship for Study Abroad
+
+<li>2014 Iowa Scholars Award
+
+<li>2014 Old Gold Scholarship
+
+<li>2014/2015 Andrew Code Scholarship in Business
+
+</ul>
+
+<br><br>
+
+<h3>RELEVANT COLLEGE COURSEWORK</h3>
+
+<br>
+
+Business Programming, Software Design and Development, Information Systems, Database Management, Business Process Analysis, Statistics for Strategy Problems
+
+<br><br>
+
+<h3>INTERNSHIP EXPERIENCE</h3>
+
+<br>
+
+Consumer Protection Intern,	May 2016—August 2016
+
+<br>
+
+Iowa Attorney General’s Office, Des Moines, IA
+
+<br>
+
+<ul>
+
+		 <li>Resolved individual consumer complaints against businesses operating in the State of Iowa.
+
+		 <li>Assisted attorneys and investigators on investigations, litigation support, and document review.
+
+		 <li>Answered consumers' questions on matters relating to unfair or deceptive business practices.
+
+</ul>
+
+<br><br>
+
+<h3>SKILLS</h3>
+
+<br>
+
+<ul>
+
+		 <li>Professional working proficiency in Microsoft Office: Word, PowerPoint, Excel and Access
+
+		 <li>Experience with the SQL and Java languages through coursework in the Information Systems track of the Business Analytics and Information Systems major.
+
+		 <li>Upper intermediate Spanish abilities in reading, writing and speaking. Studied abroad at La Universidad de Sevilla in Seville, Spain, during the fall 2016 academic semester through the Council on International Educational Exchange (CIEE).
+
+</ul>
+
+<br><br>
+
+<h3>LEADERSHIP EXPERIENCE/COLLEGE ACTIVITIES</h3>
+
+<br>
+
+Member, Henry B. Tippie Undergraduate Judicial Board, January 2015—Present
+
+<br>
+
+Member, Beta Gamma Sigma Academic Honor Society, September 2016—Present
+
+<br>
+
+Member, Tippie Technology and Innovation Association, September 2015—May 2016
+
+<br>
+
+Member, International Buddies at Tippie, September 2014—May 2015
+
+<br><br>
+
+<h3>WORK EXPERIENCE</h3>
+
+<br>
+
+IT Operations Assistant, May 2017—Present
+
+<br>
+
+The University of Iowa Foundation, Iowa City, IA
+
+<br>
+
+<ul>
+
+		 <li>Provided technical support to employees via phone, email and through tickets.
+
+		 <li>Analyzed and troubleshot software and hardware issues.
+
+		 <li>Performed hardware and software installations for new employees.
+
+		 <li>Executed basic networking queries through Microsoft PowerShell.
+
+		 <li>Created tutorials for employees on how to use the various functionalities of Office365.
+
+</ul>
+
+<br>
+
+Temporary Laborer, May 2015—August 2015
+
+<br>
+
+City of Johnston Department of Parks and Recreation, Johnston, IA
+
+<br>
+
+	<ul>
+
+		 <li>Provided lawn care and building maintenance to the parks of Johnston.
+
+		 <li>Maintained daily reports and activity logs detailing the status of all department projects.
+
+</ul>
+
+</div>
+
+</body>
+
+</html>
+

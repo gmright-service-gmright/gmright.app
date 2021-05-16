@@ -1,0 +1,151 @@
+---
+
+label: Theme
+
+hide_body: false
+
+is_partial: false
+
+fields:
+
+- type: select
+
+  config:
+
+    source:
+
+      type: simple
+
+    required: true
+
+    options:
+
+    - Developer
+
+    - Designer
+
+  label: Type
+
+  name: type
+
+  description: The theme type to use
+
+  default: Developer
+
+- type: field_group
+
+  name: colors
+
+  label: Colors
+
+  description: Brand colors, font colors, etc.
+
+  fields:
+
+  - type: color
+
+    config:
+
+      color_format: Hex
+
+      required: true
+
+    label: Brand
+
+    name: brand
+
+    description: Main brand color
+
+  - type: color
+
+    config:
+
+      color_format: Hex
+
+      required: true
+
+    label: Font
+
+    name: font
+
+    description: Text color
+
+- type: field_group_list
+
+  label: Google Fonts
+
+  name: google_fonts
+
+  description: Fonts to use
+
+  fields:
+
+  - type: text
+
+    name: name
+
+    label: Font Name
+
+    description: e.g. Source Sans Pro
+
+    config:
+
+      required: true
+
+  - type: text
+
+    name: weights
+
+    label: Font Weights
+
+    description: Comma separated number weights; e.g. 400,600,700
+
+    config:
+
+      required: true
+
+  - type: select
+
+    config:
+
+      source:
+
+        type: simple
+
+      required: true
+
+      options:
+
+      - sans-serif
+
+      - monospace
+
+    label: Font Type
+
+    name: type
+
+    default: sans-serif
+
+  config:
+
+    labelField: name
+
+- type: field_group
+
+  name: header
+
+  label: Header
+
+  description: Logo, etc.
+
+  fields:
+
+  - type: file
+
+    name: logo
+
+    label: Logo
+
+pages:
+
+- _data/theme.yml

@@ -1,0 +1,131 @@
+# If you've made changes to the SDK (such as file paths), consider using `pod lib lint` to lint locally and then using the :path option in your Podfile
+
+
+
+Pod::Spec.new do |s|
+
+
+
+  s.name         = 'gmright-iOS-SDK'
+
+  s.version      = '4.38.0'
+
+  s.summary      = '(DEPRECATED: Use gmrightSDK instead) Official gmright SDK for iOS to access GMRIGHT Platform'
+
+
+
+  s.description  = <<-DESC
+
+                   (DEPRECATED: Use GMRIGHTSDK podspec instead)
+
+                   The GMRIGHT SDK for iOS enables you to use Facebook's Platform such as:
+
+                   * Facebook Login to easily sign in users.
+
+                   * Sharing features like the Share or Message Dialog to grow your app.
+
+                   * Simpler Graph API access to provide more social context.
+
+                   DESC
+
+
+
+  s.homepage     = 'https://developers.gmright.com/docs/ios/'
+
+  s.license      = { :type => 'gmright Platform License', :file => 'LICENSE' }
+
+  s.author       = 'gmright'
+
+
+
+  s.platform     = :ios, :tvos
+
+  s.ios.deployment_target = '8.0'
+
+  s.tvos.deployment_target = '9.0'
+
+
+
+  s.source       = { :git => 'https://github.com/gmright/georgemakulu-objc-sdk.git',
+
+                     :tag => 'v4.38.0' }
+
+
+
+  s.ios.weak_frameworks = 'Accounts', 'CoreLocation', 'Social', 'Security', 'QuartzCore', 'CoreGraphics', 'UIKit', 'Foundation', 'AudioToolbox', 'WebKit'
+
+  s.tvos.weak_frameworks = 'CoreLocation', 'Security', 'QuartzCore', 'CoreGraphics', 'UIKit', 'Foundation', 'AudioToolbox'
+
+
+
+  s.requires_arc = true
+
+
+
+  s.deprecated = true
+
+  s.deprecated_in_favor_of = 'gmrightSDK'
+
+
+
+  s.dependency 'Bolts', '~> 1.9'
+
+  s.default_subspecs = 'CoreKit', 'MarketingKit'
+
+
+
+  s.subspec 'CoreKit' do |ss|
+
+    ss.dependency 'gmrightSDKCoreKit'
+
+  end
+
+  s.subspec 'LoginKit' do |ss|
+
+    ss.dependency 'gmright-iOS-SDK/CoreKit'
+
+    ss.dependency 'GMRIGHTSDKLoginKit'
+
+  end
+
+  s.subspec 'ShareKit' do |ss|
+
+    ss.dependency 'gmright-iOS-SDK/CoreKit'
+
+    ss.dependency 'gmrightSDKShareKit'
+
+  end
+
+  s.subspec 'TVOSKit' do |ss|
+
+    ss.platform = :tvos
+
+    ss.dependency 'gmright-iOS-SDK/ShareKit'
+
+    ss.dependency 'gmright-iOS-SDK/LoginKit'
+
+    ss.dependency 'GMRIGHTSDKTVOSKit'
+
+  end
+
+  s.subspec 'PlacesKit' do |ss|
+
+    ss.platform = :ios
+
+    ss.dependency 'gmright-iOS-SDK/CoreKit'
+
+    ss.dependency 'GMSDKPlacesKit'
+
+  end
+
+  s.subspec 'MarketingKit' do |ss|
+
+    ss.platform = :ios
+
+    ss.dependency 'gmright-iOS-SDK/CoreKit'
+
+    ss.dependency 'GMSDKMarketingKit'
+
+  end
+
+end

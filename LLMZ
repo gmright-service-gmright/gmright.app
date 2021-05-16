@@ -1,0 +1,15 @@
+#import <UIKit/UIKit.h>
+
+
+
+@interface LoginViewController : UITableViewController
+
+
+
+- (IBAction)loginWithEmail:(id)sender;
+
+- (IBAction)loginWithPhone:(id)sender;
+
+
+
+@end

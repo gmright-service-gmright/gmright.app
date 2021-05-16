@@ -1,0 +1,103 @@
+---
+
+label: Columns
+
+hide_body: false
+
+is_partial: true
+
+display_field: title
+
+fields:
+
+- type: text
+
+  name: id
+
+  label: Section ID
+
+  description: 'The unique section used to reference in #id-links'
+
+  config:
+
+    required: true
+
+- type: text
+
+  label: Title
+
+  name: title
+
+  description: The title to display in CMS
+
+  config:
+
+    required: true
+
+- type: field_group_list
+
+  label: Columns
+
+  name: columns
+
+  fields:
+
+  - type: text
+
+    name: title
+
+    label: Title
+
+    description: The title to display
+
+    config:
+
+      required: true
+
+  - type: text
+
+    label: Subtitle
+
+    name: subtitle
+
+    description: The optional subtitle to display
+
+  - type: textarea
+
+    label: Description
+
+    name: description
+
+    description: The content to display
+
+    config:
+
+      wysiwyg: true
+
+      schema:
+
+        format: markdown
+
+      required: true
+
+  - type: number
+
+    label: Width
+
+    name: width
+
+    config:
+
+      min: '1'
+
+      max: '8'
+
+      step: '1'
+
+      required: false
+
+    description: The optional width to apply in the 12-grid layout
+
+  config:
+
+    labelField: title

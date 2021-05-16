@@ -1,0 +1,17 @@
+repositories {
+
+    jcenter()
+
+}
+
+
+
+apply plugin: 'groovy'
+
+
+
+dependencies {
+
+    implementation gradleApi()
+
+}

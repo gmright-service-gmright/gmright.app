@@ -1,0 +1,277 @@
+---
+
+label: Site
+
+hide_body: false
+
+is_partial: false
+
+fields:
+
+- name: title
+
+  label: Site Title
+
+  type: text
+
+  hidden: false
+
+  default: ''
+
+  description: e.g. Portfolio Website
+
+  config:
+
+    required: true
+
+- type: textarea
+
+  name: description
+
+  label: Site Description
+
+  description: Describe your site
+
+  config:
+
+    wysiwyg: true
+
+    schema:
+
+      format: markdown
+
+- type: select
+
+  config:
+
+    source:
+
+      type: simple
+
+    options:
+
+    - America/Adak
+
+    - America/Anchorage
+
+    - America/Boise
+
+    - America/Chicago
+
+    - America/Denver
+
+    - America/Detroit
+
+    - America/Indiana/Indianapolis
+
+    - America/Indiana/Knox
+
+    - America/Indiana/Marengo
+
+    - America/Indiana/Petersburg
+
+    - America/Indiana/Tell_City
+
+    - America/Indiana/Vevay
+
+    - America/Indiana/Vincennes
+
+    - America/Indiana/Winamac
+
+    - America/Juneau
+
+    - America/Kentucky/Louisville
+
+    - America/Kentucky/Monticello
+
+    - America/Los_Angeles
+
+    - America/Menominee
+
+    - America/Metlakatla
+
+    - America/New_York
+
+    - America/Nome
+
+    - America/North_Dakota/Beulah
+
+    - America/North_Dakota/Center
+
+    - America/North_Dakota/New_Salem
+
+    - America/Phoenix
+
+    - America/Sitka
+
+    - America/Yakutat
+
+    - Pacific/Honolulu
+
+    required: true
+
+  label: Timezone
+
+  name: timezone
+
+  description: Your local timezone
+
+  default: America/Los_Angeles
+
+- type: select
+
+  config:
+
+    source:
+
+      type: simple
+
+    required: true
+
+    options:
+
+    - en
+
+  name: lang
+
+  label: Language
+
+  description: Two letter acronym e.g. "en"
+
+  default: en
+
+  hidden: false
+
+- type: text
+
+  name: ga_tracking_id
+
+  label: 'SEO: Google Analytics Tracking ID'
+
+  description: e.g UA-123456789-1
+
+- name: author
+
+  label: 'SEO: Author'
+
+  type: field_group
+
+  fields:
+
+  - name: name
+
+    label: Author
+
+    type: text
+
+    hidden: false
+
+    default: ''
+
+    description: e.g. John Smith
+
+    config:
+
+      required: false
+
+  - name: twitter
+
+    label: Twitter
+
+    type: text
+
+    hidden: false
+
+    default: ''
+
+    description: Your username without the `@` symbol
+
+  hidden: false
+
+  default: ''
+
+  description: Used for SEO
+
+- name: social
+
+  label: 'SEO: Social'
+
+  type: field_group
+
+  fields:
+
+  - name: name
+
+    label: Name
+
+    type: text
+
+    hidden: false
+
+    default: ''
+
+    description: e.g. John Smith
+
+  - name: links
+
+    label: Social Links
+
+    type: list
+
+    hidden: false
+
+    default: ''
+
+    description: e.g. https://twitter.com/username
+
+  hidden: false
+
+  default: ''
+
+  description: Used for SEO
+
+- name: twitter
+
+  label: 'SEO: Twitter'
+
+  type: field_group
+
+  fields:
+
+  - name: username
+
+    label: Username
+
+    type: text
+
+    hidden: false
+
+    default: ''
+
+    description: Your username without the `@` symbol
+
+  hidden: false
+
+  default: ''
+
+  description: Used for SEO
+
+- type: file
+
+  name: image
+
+  label: 'SEO: Image'
+
+  description: Used for SEO
+
+- type: file
+
+  name: logo
+
+  label: 'SEO: Logo'
+
+  description: Used for SEO
+
+pages:
+
+- _config.yml

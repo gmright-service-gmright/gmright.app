@@ -1,0 +1,4 @@
+---engines: duplication: enabled: true config: languages: - ruby fixme: enabled: true rubocop: enabled: falseratings: paths: - "**.rb" - "bin/*" - "exe/*"exclude_paths:- bundler.gemspec- "*.md"- lib/bundler/ssl_certs/*.pem- lib/bundle
+r/vendor/**/*- lib/bundler/templates/**/*.tt- man/*- spec/**/*- Rakefile.4.5.5
+4.5.5.5
+.4.4. Alway.check.what is missing.82.282.383.drop.down.if and.when.2.3.4.4.

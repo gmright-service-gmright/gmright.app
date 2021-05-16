@@ -1,0 +1,23 @@
+require 'sinatra'
+require 'json'
+
+post '/payload' do
+  push = JSON.parse(request.body.read)
+  puts "I got some JSON: #{push.inspect}"
+end
+
+*.ngrok.io
+http://localhost:4567/payload
+
+http://7e9ea9dc.ngrok.io -> 127.0.0.1:4567
+
+./ngrok http 4567
+POST
+/payload
+
+~/Developer/platform-samples/hooks/ruby/configuring-your-server $ ruby server.rb
+== Sinatra/1.4.4 has taken the stage on 4567 for development with backup from Thin
+>> Thin web server (v1.5.1 codename Straight Razor)
+>> Maximum connections set to 1024
+>> Listening on localhost:4567, CTRL+C to stop
+I got some JSON: {"action"=>"opened", "issue"=>{"url"=>"...

@@ -1,0 +1,6 @@
+checkstyle {
+    toolVersion // A string, as per http://checkstyle.sourceforge.net/releasenotes.html, e.g., '8.8'
+    exclude // A fileTree, such as project.fileTree('src/test/java') to exclude Java unit tests
+    configFile // A file containing the Checkstyle config, e.g., teamPropsFile('static-analysis/checkstyle-modules.xml')
+    includeVariants { variant -> ... } // A closure to determine which variants (for Android) to include
+}

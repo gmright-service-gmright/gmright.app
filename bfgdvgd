@@ -1,0 +1,2 @@
+verify. You should see your new TXT record listed in the command output.
+dig _github-challenge-ORGANIZATION.example.com +nostats +nocomments +nocmd

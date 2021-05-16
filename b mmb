@@ -1,0 +1,25 @@
+<script src="https://www.gstatic.com/firebasejs/5.7.1/firebase.js"></script>
+
+<script>
+
+  // Initialize Firebase
+
+  var config = {
+
+    apiKey: "AIzaSyAqANaQruG1VkzuzmFwM3Hih-LdhCA5Fu0",
+
+    authDomain: "gmright-217706.firebaseapp.com",
+
+    databaseURL: "https://gmright-217706.firebaseio.com",
+
+    projectId: "gmright-217706",
+
+    storageBucket: "gmright-217706.appspot.com",
+
+    messagingSenderId: "77894697164"
+
+  };
+
+  firebase.initializeApp(config);
+
+</script>

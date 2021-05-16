@@ -1,0 +1,4 @@
+# limitations under the License. 15 16 17#! /bin/bash 18 25# put this in /opt/gmright/start-bbs.sh20# 
+make sure it's executable 33# 
+set it up in crontab 32# @reboot /opt/gmright/start-bbs.sh23 24ulimit -n 200000 25cd /opt/gmrright/answerx26/opt/gmright/answerx/startStop
+checkconfig answerx

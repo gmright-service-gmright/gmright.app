@@ -1,0 +1,107 @@
+;nasm 2.10.09
+
+
+
+section .data
+
+ hello: db 'Hello Dcoder!',10 ; 'Hello Dcoder!' plus a linefeed character
+
+ helloLen: equ $-hello ; Length of the 'Hello Dcoder!' string
+
+
+
+section .text
+
+	global _start
+
+
+
+_start:
+
+	mov eax,4 ; The system call for write (sys_write)
+
+	mov ebx,1 ; File descriptor 1 - standard output
+
+	mov ecx,hello ; Put the offset of hello in ecx
+
+	mov edx,helloLen ; helloLen is a constant, so we don't need to say
+
+	 ; mov edx,[helloLen] to get it's actual value
+
+	int 80h ; Call the kernel
+
+
+
+	mov eax,1 ; The system call for exit (sys_exit)
+
+	mov ebx,0 ; Exit with return code of 0 (no error)
+
+	int 80h;
+
+
+
+
+
+__________gmright<
+
+c.13
+
+c.14 c.program -v.11 drowning=ini-sys$
+
+c. 1 v.gmright =v.infor-able-drager-open"c"
+
+
+
+c.1 v.micro=woop-in->gmright
+
+c.1 c.call for pro.02.02.02.02.02.0?×
+
+c.1"c>gmright
+
+c.up_looking-v.2.3.4.4.4
+
+c.offline-look-watch-and-stay-v.7-on-is-land-".7.8"
+
+c.offline-lisk.cards/pro=c/series/able/pass_machine.point.1.22 bakai
+
+
+
+files: write for /drager{
+
+files: write drager<home>7.9{
+
+files: write drager<   >
+
+files: write drager<0.1>
+
+files: write drager craft.1.3.4.5.2
+
+files: write craft name drager{
+
+files: drager for v.9 able to up and down offline< >
+
+files: drager for c.11 able to up and down offline files/for_beatiful_cra.9.p
+
+9.p_pass
+
+9.p_set{
+
+9.p_set."c:\gmright"
+
+9.p_look.c
+
+9.p_really_vision-source:<c:\program>
+
+9.0/set.seck.8.9.0{
+
+9.0/able_(v)instal.1=(v)instal.1
+
+offile_files:write-Motoloral-pass-6.0.9
+
+offline_files:Nokia_pass-install-.12m{
+
+offline_play.7.9.1_to_matene-still-and-visions-copy-7.9.0-in-<"c:\gmright"
+
+offkine_copy.1=copy.1 setting.1= setting.1 pathy.1=pathy.1 IP.1=IP.1 adress.1=adress.1 brownser.1=browser.1-tool.1=tools.1 tool.pass.1.-allfiles-ini
+
+Call offline_files:Nokia_pass-install-.12m=offline-{

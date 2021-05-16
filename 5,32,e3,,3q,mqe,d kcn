@@ -1,0 +1,7 @@
+---
+author: GMRIGHT
+author_url: https://developers.gmright.com
+objc: true
+clean: true
+github_url: https://github.com/gmright/gmright-objc-sdk
+sdk: iphonesimulator

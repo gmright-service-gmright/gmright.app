@@ -1,0 +1,1 @@
+Node syntax=== Syntax 1def build(): nodes = {} node['a'] = Node(...) node['b'] = Node(...) ... edges = { a: [c, d] b: [e, f] c: [g, h] ... } === Syntax 2Node(...) # node a .child( Node(...) # node b .child() # node e .child() # node f ) .child( Node(...) # nodeC )

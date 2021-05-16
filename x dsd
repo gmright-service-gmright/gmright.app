@@ -1,0 +1,161 @@
+---
+
+label: Work
+
+hide_body: false
+
+is_partial: false
+
+fields:
+
+- type: select
+
+  name: type
+
+  config:
+
+    source:
+
+      type: simple
+
+    required: true
+
+    options:
+
+    - github
+
+    - graphical
+
+  label: Type
+
+  description: Work type
+
+  default: graphical
+
+- name: title
+
+  label: Title
+
+  type: text
+
+  hidden: false
+
+  default: ''
+
+  description: Client or project name
+
+  config:
+
+    required: true
+
+- name: subtitle
+
+  label: Subtitle
+
+  type: text
+
+  hidden: false
+
+  default: 
+
+  description: Subtitle for the work
+
+- name: date
+
+  label: Date
+
+  type: datetime
+
+  hidden: false
+
+  default: ''
+
+  description: Work date
+
+  config:
+
+    time_format: " "
+
+- type: tag_list
+
+  label: Categories
+
+  name: categories
+
+  description: Work categories
+
+- type: field_group_list
+
+  name: profiles
+
+  label: Profiles
+
+  description: Website, Facebook, etc.
+
+  fields:
+
+  - type: text
+
+    label: Title
+
+    name: title
+
+    description: e.g. Facebook
+
+    config:
+
+      required: true
+
+  - type: text
+
+    name: url
+
+    label: URL
+
+    description: e.g. https://facebook.com
+
+    config:
+
+      required: true
+
+  - type: select
+
+    name: icon
+
+    config:
+
+      source:
+
+        type: documents
+
+        file: _data/theme.yml
+
+        path: icons
+
+      required: true
+
+    label: Icon
+
+    description: Font Awesome icon
+
+    default: ''
+
+  config:
+
+    labelField: title
+
+- type: image_gallery
+
+  name: images
+
+  label: Work Portfolio
+
+  description: Image gallery
+
+pages:
+
+- _work/swiftcommonmark.md
+
+- _work/portfolio-theme.md
+
+- _work/swiftyviper.md

@@ -1,0 +1,85 @@
+es (98 sloc) 4.33 KB 
+
+/**
+
+ * Solarized syntax
+
+ * for use with Jekyll and Pygments
+
+ * based on Solarized Dark theme for reveal.js by Achim Staebler
+
+ * and Solarized colors by Ethan Schoonover
+
+ * http://ethanschoonover.com/solarized
+
+ * remixed by: Thomas Friese
+
+ * http://tasmo.rocks/
+
+**/
+
+@mixin syntax( $sybase03,$sybase02,$sybase01,$sybase00,$sybase0,$sybase1,$sybase2,$sybase3,$syyellow,$syorange,$syred,$symagenta,$syviolet,$syblue,$sycyan,$sygreen )
+
+{
+
+  .reveal pre {
+
+    background-color: $sybase03; color: $sybase1;
+
+    code a {
+
+      &:not( .image ), &:active, &:visited {
+
+        color: $sybase1;
+
+      }
+
+      &:hover {
+
+        color: lighten( $sybase1, 20% );
+
+      }
+
+    }
+
+  }
+
+  .reveal pre code {
+
+  	.lineno { color: $sybase01 } // Line Numbers
+
+  	.c { color: $sybase01 } /* Comment */
+
+  	.err { color: $sybase1 } /* Error */
+
+  	.g { color: $sybase1 } /* Generic */
+
+  	.k { color: $sygreen } /* Keyword */
+
+  	.l { color: $sybase1 } /* Literal */
+
+  	.n { color: $sybase1 } /* Name */
+
+  	.o { color: $sygreen } /* Operator */
+
+  	.x { color: $syorange } /* Other */
+
+  	.p { color: $sybase1 } /* Punctuation */
+
+  	.cm { color: $sybase01 } /* Comment.Multiline */
+
+  	.cp { color: $sygreen } /* Comment.Preproc */
+
+  	.c1 { color: $sybase01 } /* Comment.Single */
+
+  	.cs { color: $sygreen } /* Comment.Special */
+
+  	.gd { color: $sycyan } /* Generic.Deleted */
+
+  	.ge { color: $sybase1; font-style: italic } /* Generic.Emph */
+
+  	.gr { color: $syred } /* Generic.Error */
+
+  	.gh { color: $syorange } /* Generic.Heading */
+
+  	.gi { color: $sygreen } /* Generic.Inserted */

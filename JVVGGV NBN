@@ -1,0 +1,9234 @@
+<?php
+
+
+ 
+
+
+
+ 
+/*
+
+
+ 
+ * Copyright 2008 Google Inc.
+
+
+ 
+ *
+
+
+ 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+
+
+ 
+ * you may not use this file except in compliance with the License.
+
+
+ 
+ * You may obtain a copy of the License at
+
+
+ 
+ *
+
+
+ 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+
+
+ 
+ *
+
+
+ 
+ * Unless required by applicable law or agreed to in writing, software
+
+
+ 
+ * distributed under the License is distributed on an "AS IS" BASIS,
+
+
+ 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+
+ 
+ * See the License for the specific language governing permissions and
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+use GuzzleHttp\Client;
+
+
+ 
+use GuzzleHttp\ClientInterface;
+
+
+ 
+use Google\Auth\CacheInterface;
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * Wrapper around Google Access Tokens which provides convenience functions
+
+
+ 
+ *
+
+
+ 
+ */
+
+
+ 
+class Google_AccessToken
+
+
+ 
+{
+
+
+ 
+  const FEDERATED_SIGNON_CERT_URL = 'https://www.googleapis.com/oauth2/v1/certs';
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @var array The access token.
+
+
+ 
+   */
+
+
+ 
+  private $token;
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @var GuzzleHttp\ClientInterface The http client
+
+
+ 
+   */
+
+
+ 
+  private $http;
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @var Google\Auth\CacheInterface cache class
+
+
+ 
+   */
+
+
+ 
+  private $cache;
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * Instantiates the class, but does not initiate the login flow, leaving it
+
+
+ 
+   * to the discretion of the caller.
+
+
+ 
+   */
+
+
+ 
+  public function __construct($token, ClientInterface $http = null, CacheInterface $cache = null)
+
+
+ 
+  {
+
+
+ 
+    if (is_null($http)) {
+
+
+ 
+      $http = new Client();
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->http = $http;
+
+
+ 
+    $this->cache = $cache;
+
+
+ 
+    $this->setAccessToken($token);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @param string|array $token
+
+
+ 
+   * @throws InvalidArgumentException
+
+
+ 
+   */
+
+
+ 
+  public function setAccessToken($token)
+
+
+ 
+  {
+
+
+ 
+    if (is_string($token)) {
+
+
+ 
+      if ($json = json_decode($token, true)) {
+
+
+ 
+        $token = $json;
+
+
+ 
+      } else {
+
+
+ 
+        // assume $token is just the token string
+
+
+ 
+        $token = [
+
+
+ 
+          'access_token' => $token,
+
+
+ 
+        ];
+
+
+ 
+      }
+
+
+ 
+    }
+
+
+ 
+    if ($token == null) {
+
+
+ 
+      throw new InvalidArgumentException('invalid json token');
+
+
+ 
+    }
+
+
+ 
+    if (!isset($token['access_token'])) {
+
+
+ 
+      throw new InvalidArgumentException("Invalid token format");
+
+
+ 
+    }
+
+
+ 
+    $this->token = $token;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function getAccessToken()
+
+
+ 
+  {
+
+
+ 
+    return $this->token;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * Revoke an OAuth2 access token or refresh token. This method will revoke the current access
+
+
+ 
+   * token, if a token isn't provided.
+
+
+ 
+   * @throws Google_Auth_Exception
+
+
+ 
+   * @param string|null $token The token (access token or a refresh token) that should be revoked.
+
+
+ 
+   * @return boolean Returns True if the revocation was successful, otherwise False.
+
+
+ 
+   */
+
+
+ 
+  public function revokeToken()
+
+
+ 
+  {
+
+
+ 
+    if (!$this->token) {
+
+
+ 
+        // Not initialized, no token to actually revoke
+
+
+ 
+        return false;
+
+
+ 
+    } elseif (array_key_exists('refresh_token', $this->token)) {
+
+
+ 
+        $token = $this->token['refresh_token'];
+
+
+ 
+    } else {
+
+
+ 
+        $token = $this->token['access_token'];
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $request = $this->http->createRequest('POST', Google_Client::OAUTH2_REVOKE_URI);
+
+
+ 
+    $request->addHeader('Cache-Control', 'no-store');
+
+
+ 
+    $request->addHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+
+ 
+    $request->getBody()->replaceFields(array('token' => $token));
+
+
+ 
+
+
+
+ 
+    $response = $this->http->send($request);
+
+
+ 
+    if ($response->getStatusCode() == 200) {
+
+
+ 
+      $this->token = null;
+
+
+ 
+
+
+
+ 
+      return true;
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    return false;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * Retrieve and cache a certificates file.
+
+
+ 
+   *
+
+
+ 
+   * @param $url string location
+
+
+ 
+   * @throws Google_Auth_Exception
+
+
+ 
+   * @return array certificates
+
+
+ 
+   */
+
+
+ 
+  private function retrieveCertsFromLocation($url)
+
+
+ 
+  {
+
+
+ 
+    // If we're retrieving a local file, just grab it.
+
+
+ 
+    if ("http" != substr($url, 0, 4)) {
+
+
+ 
+      $file = file_get_contents($url);
+
+
+ 
+      if ($file) {
+
+
+ 
+        return json_decode($file, true);
+
+
+ 
+      } else {
+
+
+ 
+        throw new Google_Auth_Exception(
+
+
+ 
+            "Failed to retrieve verification certificates: '" .
+
+
+ 
+            $url . "'."
+
+
+ 
+        );
+
+
+ 
+      }
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $response = $this->http->get($url);
+
+
+ 
+
+
+
+ 
+    if ($response->getStatusCode() == 200) {
+
+
+ 
+      return $response->json();
+
+
+ 
+    }
+
+
+ 
+    throw new Google_Auth_Exception(
+
+
+ 
+        "Failed to retrieve verification certificates: '" .
+
+
+ 
+        $response->getBody()->getContents() . "'.",
+
+
+ 
+        $response->getStatusCode()
+
+
+ 
+    );
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  // Gets federated sign-on certificates to use for verifying identity tokens.
+
+
+ 
+  // Returns certs as array structure, where keys are key ids, and values
+
+
+ 
+  // are PEM encoded certificates.
+
+
+ 
+  private function getFederatedSignOnCerts()
+
+
+ 
+  {
+
+
+ 
+    $cache = $this->getCache();
+
+
+ 
+
+
+
+ 
+    if (!$certs = $cache->get('federated_signon_certs')) {
+
+
+ 
+      $certs = $this->retrieveCertsFromLocation(
+
+
+ 
+        self::FEDERATED_SIGNON_CERT_URL
+
+
+ 
+      );
+
+
+ 
+
+
+
+ 
+      $cache->set('federated_signon_certs', $certs);
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    return $certs;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * Verifies an id token and returns the authenticated apiLoginTicket.
+
+
+ 
+   * Throws an exception if the id token is not valid.
+
+
+ 
+   * The audience parameter can be used to control which id tokens are
+
+
+ 
+   * accepted.  By default, the id token must have been issued to this OAuth2 client.
+
+
+ 
+   *
+
+
+ 
+   * @param $audience
+
+
+ 
+   * @return array the token payload, if successful
+
+
+ 
+   * @throws Google_Auth_Exception
+
+
+ 
+   */
+
+
+ 
+  public function verifyIdToken($audience = null)
+
+
+ 
+  {
+
+
+ 
+    if (empty($this->token['id_token'])) {
+
+
+ 
+      throw new LogicException('id_token cannot be null');
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    // Check signature
+
+
+ 
+    $certs = $this->getFederatedSignonCerts();
+
+
+ 
+    foreach ($certs as $keyName => $pem) {
+
+
+ 
+      $key = openssl_x509_read($pem);
+
+
+ 
+
+
+
+ 
+      try {
+
+
+ 
+        $payload = JWT::decode($this->token['id_token'], $key, array('RS256'));
+
+
+ 
+        if (is_null($audience) || (property_exists($resp, 'aud') && $resp->aud == $audience)) {
+
+
+ 
+          return $payload;
+
+
+ 
+        }
+
+
+ 
+        openssl_x509_free($key);
+
+
+ 
+      } catch (ExpiredException $e) {
+
+
+ 
+        return false;
+
+
+ 
+        // continue
+
+
+ 
+      } catch (DomainException $e) {
+
+
+ 
+        // continue
+
+
+ 
+      }
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    return false;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function getCache()
+
+
+ 
+  {
+
+
+ 
+    if (!$this->cache) {
+
+
+ 
+      $this->cache = $this->createDefaultCache();
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    return $this->cache;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  protected function createDefaultCache()
+
+
+ 
+  {
+
+
+ 
+    return new Google_Cache_File(sys_get_temp_dir().'/google-api-php-client');
+
+
+ 
+  }
+
+
+ 
+}  
+ 
+View file 
+ 
+5 src/Google/Auth/AppIdentity.php 
+ 
+@@ -20,11 +20,8 @@
+
+
+ 
+ * which is 5.3 and above only, so if you include this in a PHP 5.2
+
+
+ 
+ * setup or one without 5.3 things will blow up.
+
+
+ 
+ */
+
+
+ 
+use google\appengine\api\app_identity\AppIdentityService;
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+use google\appengine\api\app_identity\AppIdentityService;
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * Authentication via the Google App Engine App Identity service.
+ 
+
+ 
+View file 
+ 
+149 src/Google/Auth/ComputeEngine.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+4 src/Google/Auth/Exception.php 
+ 
+@@ -15,10 +15,6 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+class Google_Auth_Exception extends Google_Exception
+
+
+ 
+{
+
+
+ 
+}
+ 
+View file 
+ 
+36 src/Google/Auth/Interface.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+458 src/Google/Auth/OAuth2.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+64 src/Google/Auth/Simple.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+53 src/Google/Cache/Abstract.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+44 src/Google/Cache/Apc.php 
+ 
+@@ -15,9 +15,8 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+use Google\Auth\CacheInterface;
+
+
+ 
+use Psr\Log\LoggerInterface;
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * A persistent storage class based on the APC cache, which is not
+ 
+@@ -27,23 +26,23 @@
+
+
+ 
+ *
+
+
+ 
+ * @author Chris Chabot <chabotc@google.com>
+
+
+ 
+ */
+
+
+ 
+class Google_Cache_Apc extends Google_Cache_Abstract
+
+
+ 
+class Google_Cache_Apc implements CacheInterface
+
+
+ 
+{
+
+
+ 
+  /**
+
+
+ 
+   * @var Google_Client the current client
+
+
+ 
+   * @var Psr\Log\LoggerInterface logger
+
+
+ 
+   */
+
+
+ 
+  private $client;
+
+
+ 
+  private $logger;
+
+
+ 
+
+
+
+ 
+  public function __construct(Google_Client $client)
+
+
+ 
+  public function __construct(LoggerInterface $logger = null)
+
+
+ 
+  {
+
+
+ 
+    $this->logger = $logger;
+
+
+ 
+
+
+
+ 
+    if (! function_exists('apc_add') ) {
+
+
+ 
+      $error = "Apc functions not available";
+
+
+ 
+
+
+
+ 
+      $client->getLogger()->error($error);
+
+
+ 
+      $this->log('error', $error);
+
+
+ 
+      throw new Google_Cache_Exception($error);
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->client = $client;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+   /**
+ 
+@@ -53,22 +52,25 @@ public function get($key, $expiration = false)
+
+
+ 
+  {
+
+
+ 
+    $ret = apc_fetch($key);
+
+
+ 
+    if ($ret === false) {
+
+
+ 
+      $this->client->getLogger()->debug(
+
+
+ 
+      $this->log(
+
+
+ 
+          'debug',
+
+
+ 
+          'APC cache miss',
+
+
+ 
+          array('key' => $key)
+
+
+ 
+      );
+
+
+ 
+      return false;
+
+
+ 
+    }
+
+
+ 
+    if (is_numeric($expiration) && (time() - $ret['time'] > $expiration)) {
+
+
+ 
+      $this->client->getLogger()->debug(
+
+
+ 
+      $this->log(
+
+
+ 
+          'debug',
+
+
+ 
+          'APC cache miss (expired)',
+
+
+ 
+          array('key' => $key, 'var' => $ret)
+
+
+ 
+      );
+
+
+ 
+      $this->delete($key);
+
+
+ 
+      return false;
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->client->getLogger()->debug(
+
+
+ 
+    $this->log(
+
+
+ 
+        'debug',
+
+
+ 
+        'APC cache hit',
+
+
+ 
+        array('key' => $key, 'var' => $ret)
+
+
+ 
+    );
+ 
+@@ -85,14 +87,16 @@ public function set($key, $value)
+
+
+ 
+    $rc = apc_store($key, $var);
+
+
+ 
+
+
+
+ 
+    if ($rc == false) {
+
+
+ 
+      $this->client->getLogger()->error(
+
+
+ 
+      $this->log(
+
+
+ 
+          'error',
+
+
+ 
+          'APC cache set failed',
+
+
+ 
+          array('key' => $key, 'var' => $var)
+
+
+ 
+      );
+
+
+ 
+      throw new Google_Cache_Exception("Couldn't store data");
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->client->getLogger()->debug(
+
+
+ 
+    $this->log(
+
+
+ 
+        'debug',
+
+
+ 
+        'APC cache set',
+
+
+ 
+        array('key' => $key, 'var' => $var)
+
+
+ 
+    );
+ 
+@@ -104,10 +108,18 @@ public function set($key, $value)
+
+
+ 
+   */
+
+
+ 
+  public function delete($key)
+
+
+ 
+  {
+
+
+ 
+    $this->client->getLogger()->debug(
+
+
+ 
+    $this->log(
+
+
+ 
+        'debug',
+
+
+ 
+        'APC cache delete',
+
+
+ 
+        array('key' => $key)
+
+
+ 
+    );
+
+
+ 
+    apc_delete($key);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  private function log($level, $message, $context = array())
+
+
+ 
+  {
+
+
+ 
+    if ($this->logger) {
+
+
+ 
+      $this->logger->log($level, $message, $context);
+
+
+ 
+    }
+
+
+ 
+  }
+
+
+ 
+}
+ 
+View file 
+ 
+4 src/Google/Cache/Exception.php 
+ 
+@@ -15,10 +15,6 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+class Google_Cache_Exception extends Google_Exception
+
+
+ 
+{
+
+
+ 
+}
+ 
+View file 
+ 
+54 src/Google/Cache/File.php 
+ 
+@@ -15,9 +15,8 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+use Google\Auth\CacheInterface;
+
+
+ 
+use Psr\Log\LoggerInterface;
+
+
+ 
+
+
+
+ 
+/*
+
+
+ 
+ * This class implements a basic on disk storage. While that does
+ 
+@@ -27,21 +26,21 @@
+
+
+ 
+ *
+
+
+ 
+ * @author Chris Chabot <chabotc@google.com>
+
+
+ 
+ */
+
+
+ 
+class Google_Cache_File extends Google_Cache_Abstract
+
+
+ 
+class Google_Cache_File implements CacheInterface
+
+
+ 
+{
+
+
+ 
+  const MAX_LOCK_RETRIES = 10;
+
+
+ 
+  private $path;
+
+
+ 
+  private $fh;
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @var Google_Client the current client
+
+
+ 
+   * @var use Psr\Log\LoggerInterface logger
+
+
+ 
+   */
+
+
+ 
+  private $client;
+
+
+ 
+  private $logger;
+
+
+ 
+
+
+
+ 
+  public function __construct(Google_Client $client)
+
+
+ 
+  public function __construct($path, LoggerInterface $logger = null)
+
+
+ 
+  {
+
+
+ 
+    $this->client = $client;
+
+
+ 
+    $this->path = $this->client->getClassConfig($this, 'directory');
+
+
+ 
+    $this->path = $path;
+
+
+ 
+    $this->logger = $logger;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function get($key, $expiration = false)
+ 
+@@ -50,7 +49,8 @@ public function get($key, $expiration = false)
+
+
+ 
+    $data = false;
+
+
+ 
+
+
+
+ 
+    if (!file_exists($storageFile)) {
+
+
+ 
+      $this->client->getLogger()->debug(
+
+
+ 
+      $this->log(
+
+
+ 
+          'debug',
+
+
+ 
+          'File cache miss',
+
+
+ 
+          array('key' => $key, 'file' => $storageFile)
+
+
+ 
+      );
+ 
+@@ -60,7 +60,8 @@ public function get($key, $expiration = false)
+
+
+ 
+    if ($expiration) {
+
+
+ 
+      $mtime = filemtime($storageFile);
+
+
+ 
+      if ((time() - $mtime) >= $expiration) {
+
+
+ 
+        $this->client->getLogger()->debug(
+
+
+ 
+        $this->log(
+
+
+ 
+            'debug',
+
+
+ 
+            'File cache miss (expired)',
+
+
+ 
+            array('key' => $key, 'file' => $storageFile)
+
+
+ 
+        );
+ 
+@@ -74,15 +75,17 @@ public function get($key, $expiration = false)
+
+
+ 
+        $data = fread($this->fh, filesize($storageFile));
+
+
+ 
+        $data =  unserialize($data);
+
+
+ 
+      } else {
+
+
+ 
+        $this->client->getLogger()->debug(
+
+
+ 
+        $this->log(
+
+
+ 
+            'debug',
+
+
+ 
+            'Cache file was empty',
+
+
+ 
+            array('file' => $storageFile)
+
+
+ 
+        );
+
+
+ 
+      }
+
+
+ 
+      $this->unlock($storageFile);
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->client->getLogger()->debug(
+
+
+ 
+    $this->log(
+
+
+ 
+        'debug',
+
+
+ 
+        'File cache hit',
+
+
+ 
+        array('key' => $key, 'file' => $storageFile, 'var' => $data)
+
+
+ 
+    );
+ 
+@@ -100,12 +103,14 @@ public function set($key, $value)
+
+
+ 
+      $result = fwrite($this->fh, $data);
+
+
+ 
+      $this->unlock($storageFile);
+
+
+ 
+
+
+
+ 
+      $this->client->getLogger()->debug(
+
+
+ 
+      $this->log(
+
+
+ 
+          'debug',
+
+
+ 
+          'File cache set',
+
+
+ 
+          array('key' => $key, 'file' => $storageFile, 'var' => $value)
+
+
+ 
+      );
+
+
+ 
+    } else {
+
+
+ 
+      $this->client->getLogger()->notice(
+
+
+ 
+      $this->log(
+
+
+ 
+          'notice',
+
+
+ 
+          'File cache set failed',
+
+
+ 
+          array('key' => $key, 'file' => $storageFile)
+
+
+ 
+      );
+ 
+@@ -116,14 +121,16 @@ public function delete($key)
+
+
+ 
+  {
+
+
+ 
+    $file = $this->getCacheFile($key);
+
+
+ 
+    if (file_exists($file) && !unlink($file)) {
+
+
+ 
+      $this->client->getLogger()->error(
+
+
+ 
+      $this->log(
+
+
+ 
+          'error',
+
+
+ 
+          'File cache delete failed',
+
+
+ 
+          array('key' => $key, 'file' => $file)
+
+
+ 
+      );
+
+
+ 
+      throw new Google_Cache_Exception("Cache file could not be deleted");
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->client->getLogger()->debug(
+
+
+ 
+    $this->log(
+
+
+ 
+        'debug',
+
+
+ 
+        'File cache delete',
+
+
+ 
+        array('key' => $key, 'file' => $file)
+
+
+ 
+    );
+ 
+@@ -166,7 +173,8 @@ private function acquireWriteLock($storageFile)
+
+
+ 
+  {
+
+
+ 
+    $rc = $this->acquireLock(LOCK_EX, $storageFile);
+
+
+ 
+    if (!$rc) {
+
+
+ 
+      $this->client->getLogger()->notice(
+
+
+ 
+      $this->log(
+
+
+ 
+          'notice',
+
+
+ 
+          'File cache write lock failed',
+
+
+ 
+          array('file' => $storageFile)
+
+
+ 
+      );
+ 
+@@ -180,7 +188,8 @@ private function acquireLock($type, $storageFile)
+
+
+ 
+    $mode = $type == LOCK_EX ? "w" : "r";
+
+
+ 
+    $this->fh = fopen($storageFile, $mode);
+
+
+ 
+    if (!$this->fh) {
+
+
+ 
+      $this->client->getLogger()->error(
+
+
+ 
+      $this->log(
+
+
+ 
+          'error',
+
+
+ 
+          'Failed to open file during lock acquisition',
+
+
+ 
+          array('file' => $storageFile)
+
+
+ 
+      );
+ 
+@@ -206,4 +215,11 @@ public function unlock($storageFile)
+
+
+ 
+      flock($this->fh, LOCK_UN);
+
+
+ 
+    }
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  private function log($level, $message, $context = array())
+
+
+ 
+  {
+
+
+ 
+    if ($this->logger) {
+
+
+ 
+      $this->logger->log($level, $message, $context);
+
+
+ 
+    }
+
+
+ 
+  }
+
+
+ 
+}
+ 
+View file 
+ 
+61 src/Google/Cache/Memcache.php 
+ 
+@@ -15,9 +15,8 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+use Google\Auth\CacheInterface;
+
+
+ 
+use Psr\Log\LoggerInterface;
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * A persistent storage class based on the memcache, which is not
+ 
+@@ -29,43 +28,31 @@
+
+
+ 
+ *
+
+
+ 
+ * @author Chris Chabot <chabotc@google.com>
+
+
+ 
+ */
+
+
+ 
+class Google_Cache_Memcache extends Google_Cache_Abstract
+
+
+ 
+class Google_Cache_Memcache implements CacheInterface
+
+
+ 
+{
+
+
+ 
+  private $connection = false;
+
+
+ 
+  private $mc = false;
+
+
+ 
+  private $host;
+
+
+ 
+  private $port;
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @var Google_Client the current client
+
+
+ 
+   * @var use Psr\Log\LoggerInterface logger
+
+
+ 
+   */
+
+
+ 
+  private $client;
+
+
+ 
+  private $logger;
+
+
+ 
+
+
+
+ 
+  public function __construct(Google_Client $client)
+
+
+ 
+  public function __construct($host = null, $port = null, LoggerInterface $logger = null)
+
+
+ 
+  {
+
+
+ 
+    $this->logger = $logger;
+
+
+ 
+
+
+
+ 
+    if (!function_exists('memcache_connect') && !class_exists("Memcached")) {
+
+
+ 
+      $error = "Memcache functions not available";
+
+
+ 
+
+
+
+ 
+      $client->getLogger()->error($error);
+
+
+ 
+      $this->log('error', $error);
+
+
+ 
+      throw new Google_Cache_Exception($error);
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->client = $client;
+
+
+ 
+
+
+
+ 
+    if ($client->isAppEngine()) {
+
+
+ 
+      // No credentials needed for GAE.
+
+
+ 
+      $this->mc = new Memcached();
+
+
+ 
+      $this->connection = true;
+
+
+ 
+    } else {
+
+
+ 
+      $this->host = $client->getClassConfig($this, 'host');
+
+
+ 
+      $this->port = $client->getClassConfig($this, 'port');
+
+
+ 
+      if (empty($this->host) || (empty($this->port) && (string) $this->port != "0")) {
+
+
+ 
+        $error = "You need to supply a valid memcache host and port";
+
+
+ 
+
+
+
+ 
+        $client->getLogger()->error($error);
+
+
+ 
+        throw new Google_Cache_Exception($error);
+
+
+ 
+      }
+
+
+ 
+    }
+
+
+ 
+    $this->host = $host;
+
+
+ 
+    $this->port = $port;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+ 
+@@ -81,22 +68,25 @@ public function get($key, $expiration = false)
+
+
+ 
+      $ret = memcache_get($this->connection, $key);
+
+
+ 
+    }
+
+
+ 
+    if ($ret === false) {
+
+
+ 
+      $this->client->getLogger()->debug(
+
+
+ 
+      $this->log(
+
+
+ 
+          'debug',
+
+
+ 
+          'Memcache cache miss',
+
+
+ 
+          array('key' => $key)
+
+
+ 
+      );
+
+
+ 
+      return false;
+
+
+ 
+    }
+
+
+ 
+    if (is_numeric($expiration) && (time() - $ret['time'] > $expiration)) {
+
+
+ 
+      $this->client->getLogger()->debug(
+
+
+ 
+      $this->log(
+
+
+ 
+          'debug',
+
+
+ 
+          'Memcache cache miss (expired)',
+
+
+ 
+          array('key' => $key, 'var' => $ret)
+
+
+ 
+      );
+
+
+ 
+      $this->delete($key);
+
+
+ 
+      return false;
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->client->getLogger()->debug(
+
+
+ 
+    $this->log(
+
+
+ 
+        'debug',
+
+
+ 
+        'Memcache cache hit',
+
+
+ 
+        array('key' => $key, 'var' => $ret)
+
+
+ 
+    );
+ 
+@@ -123,15 +113,16 @@ public function set($key, $value)
+
+
+ 
+      $rc = memcache_set($this->connection, $key, $data, false);
+
+
+ 
+    }
+
+
+ 
+    if ($rc == false) {
+
+
+ 
+      $this->client->getLogger()->error(
+
+
+ 
+      $this->log('error',
+
+
+ 
+          'Memcache cache set failed',
+
+
+ 
+          array('key' => $key, 'var' => $data)
+
+
+ 
+      );
+
+
+ 
+
+
+
+ 
+      throw new Google_Cache_Exception("Couldn't store data in cache");
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->client->getLogger()->debug(
+
+
+ 
+    $this->log(
+
+
+ 
+        'debug',
+
+
+ 
+        'Memcache cache set',
+
+
+ 
+        array('key' => $key, 'var' => $data)
+
+
+ 
+    );
+ 
+@@ -150,7 +141,8 @@ public function delete($key)
+
+
+ 
+      memcache_delete($this->connection, $key, 0);
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->client->getLogger()->debug(
+
+
+ 
+    $this->log(
+
+
+ 
+        'debug',
+
+
+ 
+        'Memcache cache delete',
+
+
+ 
+        array('key' => $key)
+
+
+ 
+    );
+ 
+@@ -177,8 +169,15 @@ private function connect()
+
+
+ 
+    if (! $this->connection) {
+
+
+ 
+      $error = "Couldn't connect to memcache server";
+
+
+ 
+
+
+
+ 
+      $this->client->getLogger()->error($error);
+
+
+ 
+      $this->log('error', $error);
+
+
+ 
+      throw new Google_Cache_Exception($error);
+
+
+ 
+    }
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  private function log($level, $message, $context = array())
+
+
+ 
+  {
+
+
+ 
+    if ($this->logger) {
+
+
+ 
+      $this->logger->log($level, $message, $context);
+
+
+ 
+    }
+
+
+ 
+  }
+
+
+ 
+}
+ 
+View file 
+ 
+13 src/Google/Cache/Null.php 
+ 
+@@ -15,22 +15,15 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+use Google\Auth\CacheInterface;
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * A blank storage class, for cases where caching is not
+
+
+ 
+ * required.
+
+
+ 
+ */
+
+
+ 
+class Google_Cache_Null extends Google_Cache_Abstract
+
+
+ 
+class Google_Cache_Null implements CacheInterface
+
+
+ 
+{
+
+
+ 
+  public function __construct(Google_Client $client)
+
+
+ 
+  {
+
+
+ 
+
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+   /**
+
+
+ 
+  /**
+
+
+ 
+   * @inheritDoc
+
+
+ 
+   */
+
+
+ 
+  public function get($key, $expiration = false)
+ 
+
+ 
+View file 
+ 
+755 src/Google/Client.php 
+
+ 
+Load diff
+Large diffs are not rendered by default. 
+ 
+View file 
+ 
+448 src/Google/Config.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+4 src/Google/Http/MediaFileUpload.php 
+ 
+@@ -19,10 +19,6 @@
+
+
+ 
+use GuzzleHttp\Stream\Stream;
+
+
+ 
+use GuzzleHttp\Url;
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * Manage large file uploads, which may be media but can be any type
+
+
+ 
+ * of sizable data.
+ 
+
+ 
+View file 
+ 
+7 src/Google/Http/Batch.php → src/Google/Http/Parallel.php 
+ 
+@@ -15,10 +15,6 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+use GuzzleHttp\Pool;
+
+
+ 
+use GuzzleHttp\Message\RequestInterface;
+
+
+ 
+use GuzzleHttp\Message\ResponseInterface;
+ 
+@@ -27,7 +23,7 @@
+
+
+ 
+/**
+
+
+ 
+ * Class to handle batched requests to the Google API service.
+
+
+ 
+ */
+
+
+ 
+class Google_Http_Batch
+
+
+ 
+class Google_Http_Parallel
+
+
+ 
+{
+
+
+ 
+  /** @var array service requests to be executed. */
+
+
+ 
+  private $requests = array();
+ 
+@@ -71,6 +67,7 @@ protected function parseResponse(BatchResults $responses)
+
+
+ 
+      $response = $responses[$i];
+
+
+ 
+      if (
+
+
+ 
+        $response instanceof ResponseInterface &&
+
+
+ 
+        $response->getStatusCode() < 300 &&
+
+
+ 
+        $class = $this->requests[$requestKeys[$j]]->getHeader('X-Php-Expected-Class')
+
+
+ 
+      ) {
+
+
+ 
+        $response = new $class($response->json());
+ 
+
+ 
+View file 
+ 
+21 src/Google/Http/REST.php 
+ 
+@@ -19,10 +19,6 @@
+
+
+ 
+use GuzzleHttp\Message\ResponseInterface;
+
+
+ 
+use GuzzleHttp\ClientInterface;
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * This class implements the RESTful transport of apiServiceRequest()'s
+
+
+ 
+ */
+ 
+@@ -42,15 +38,19 @@ public static function execute(
+
+
+ 
+      ClientInterface $client,
+
+
+ 
+      RequestInterface $request,
+
+
+ 
+      $config = array(),
+
+
+ 
+      $retryMap = array()
+
+
+ 
+      $retryMap = null
+
+
+ 
+  ) {
+
+
+ 
+    $runner = new Google_Task_Runner(
+
+
+ 
+        $config,
+
+
+ 
+        sprintf('%s %s', $request->getMethod(), $request->getUrl()),
+
+
+ 
+        array(get_class(), 'doExecute'),
+
+
+ 
+        array($client, $request, $retryMap)
+
+
+ 
+        array($client, $request)
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    if (!is_null($retryMap)) {
+
+
+ 
+      $runner->setRetryMap($retryMap);
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    return $runner->run();
+
+
+ 
+  }
+
+
+ 
+
+ 
+@@ -63,11 +63,11 @@ public static function execute(
+
+
+ 
+   * @throws Google_Service_Exception on server side error (ie: not authenticated,
+
+
+ 
+   *  invalid or malformed post body, invalid url)
+
+
+ 
+   */
+
+
+ 
+  public static function doExecute(ClientInterface $client, RequestInterface $request, $retryMap = array())
+
+
+ 
+  public static function doExecute(ClientInterface $client, RequestInterface $request)
+
+
+ 
+  {
+
+
+ 
+    $response = $client->send($request);
+
+
+ 
+
+
+
+ 
+    return self::decodeHttpResponse($response, $request, $retryMap);
+
+
+ 
+    return self::decodeHttpResponse($response, $request);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+ 
+@@ -80,8 +80,7 @@ public static function doExecute(ClientInterface $client, RequestInterface $requ
+
+
+ 
+   */
+
+
+ 
+  public static function decodeHttpResponse(
+
+
+ 
+      ResponseInterface $response,
+
+
+ 
+      RequestInterface $request = null,
+
+
+ 
+      $retryMap = array()
+
+
+ 
+      RequestInterface $request = null
+
+
+ 
+  ) {
+
+
+ 
+    $result = $response->json();
+
+
+ 
+    $body = (string) $response->getBody();
+ 
+@@ -94,7 +93,7 @@ public static function decodeHttpResponse(
+
+
+ 
+      if (isset($result['error']) && isset($result['error']['errors'])) {
+
+
+ 
+        $errors = $result['error']['errors'];
+
+
+ 
+      }
+
+
+ 
+      throw new Google_Service_Exception($body, $code, null, $errors, $retryMap);
+
+
+ 
+      throw new Google_Service_Exception($body, $code, null, $errors);
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    // return raw response when "alt" is "media"
+ 
+
+ 
+View file 
+ 
+4 src/Google/IO/Exception.php 
+ 
+@@ -15,10 +15,6 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+class Google_IO_Exception extends Google_Exception implements Google_Task_Retryable
+
+
+ 
+{
+
+
+ 
+  /**
+ 
+
+ 
+View file 
+ 
+408 src/Google/Logger/Abstract.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+24 src/Google/Logger/Exception.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+158 src/Google/Logger/File.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+43 src/Google/Logger/Null.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+93 src/Google/Logger/Psr.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+41 src/Google/Service/Exception.php 
+ 
+@@ -15,22 +15,13 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+class Google_Service_Exception extends Google_Exception implements Google_Task_Retryable
+
+
+ 
+class Google_Service_Exception extends Google_Exception
+
+
+ 
+{
+
+
+ 
+  /**
+
+
+ 
+   * Optional list of errors returned in a JSON body of an HTTP error response.
+
+
+ 
+   */
+
+
+ 
+  protected $errors = array();
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @var array $retryMap Map of errors with retry counts.
+
+
+ 
+   */
+
+
+ 
+  private $retryMap = array();
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * Override default constructor to add the ability to set $errors and a retry
+
+
+ 
+   * map.
+ 
+@@ -46,8 +37,7 @@ public function __construct(
+
+
+ 
+      $message,
+
+
+ 
+      $code = 0,
+
+
+ 
+      Exception $previous = null,
+
+
+ 
+      $errors = array(),
+
+
+ 
+      array $retryMap = null
+
+
+ 
+      $errors = array()
+
+
+ 
+  ) {
+
+
+ 
+    if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
+
+
+ 
+      parent::__construct($message, $code, $previous);
+ 
+@@ -56,10 +46,6 @@ public function __construct(
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->errors = $errors;
+
+
+ 
+
+
+
+ 
+    if (is_array($retryMap)) {
+
+
+ 
+      $this->retryMap = $retryMap;
+
+
+ 
+    }
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+ 
+@@ -79,27 +65,4 @@ public function getErrors()
+
+
+ 
+  {
+
+
+ 
+    return $this->errors;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * Gets the number of times the associated task can be retried.
+
+
+ 
+   *
+
+
+ 
+   * NOTE: -1 is returned if the task can be retried indefinitely
+
+
+ 
+   *
+
+
+ 
+   * @return integer
+
+
+ 
+   */
+
+
+ 
+  public function allowedRetries()
+
+
+ 
+  {
+
+
+ 
+    if (isset($this->retryMap[$this->code])) {
+
+
+ 
+      return $this->retryMap[$this->code];
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $errors = $this->getErrors();
+
+
+ 
+
+
+
+ 
+    if (!empty($errors) && isset($errors[0]['reason']) &&
+
+
+ 
+        isset($this->retryMap[$errors[0]['reason']])) {
+
+
+ 
+      return $this->retryMap[$errors[0]['reason']];
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    return 0;
+
+
+ 
+  }
+
+
+ 
+}
+ 
+View file 
+ 
+10 src/Google/Service/Resource.php 
+ 
+@@ -15,10 +15,6 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * Implements the actual methods/resources of the discovered Google API using magic function
+
+
+ 
+ * calling overloading (__call()), which on call will see if the method name (plus.activities.list)
+ 
+@@ -194,13 +190,15 @@ public function call($name, $arguments, $expected_class = null)
+
+
+ 
+        $parameters
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    $request = $this->client->getHttpClient()->createRequest(
+
+
+ 
+    $http = $this->client->getHttpClient();
+
+
+ 
+    $this->client->attachAuthListener($http);
+
+
+ 
+
+
+
+ 
+    $request = $http->createRequest(
+
+
+ 
+        $method['httpMethod'],
+
+
+ 
+        $url,
+
+
+ 
+        ['json' => $postBody]
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    $request = $this->client->getAuth()->sign($request);
+
+
+ 
+    if ($this->client->shouldDefer()) {
+
+
+ 
+      // @TODO find a better way to do this
+
+
+ 
+      $request->setHeader('X-Php-Expected-Class', $expected_class);
+ 
+
+ 
+View file 
+ 
+4 src/Google/Task/Exception.php 
+ 
+@@ -15,10 +15,6 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+class Google_Task_Exception extends Google_Exception
+
+
+ 
+{
+
+
+ 
+}
+ 
+View file 
+ 
+12 src/Google/Task/Retryable.php 
+ 
+@@ -15,22 +15,10 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * Interface for checking how many times a given task can be retried following
+
+
+ 
+ * a failure.
+
+
+ 
+ */
+
+
+ 
+interface Google_Task_Retryable
+
+
+ 
+{
+
+
+ 
+  /**
+
+
+ 
+   * Gets the number of times the associated task can be retried.
+
+
+ 
+   *
+
+
+ 
+   * NOTE: -1 is returned if the task can be retried indefinitely
+
+
+ 
+   *
+
+
+ 
+   * @return integer
+
+
+ 
+   */
+
+
+ 
+  public function allowedRetries();
+
+
+ 
+}
+ 
+View file 
+ 
+59 src/Google/Task/Runner.php 
+ 
+@@ -15,17 +15,17 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+if (!class_exists('Google_Client')) {
+
+
+ 
+  require_once dirname(__FILE__) . '/../autoload.php';
+
+
+ 
+}
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * A task runner with exponential backoff support.
+
+
+ 
+ *
+
+
+ 
+ * @see https://developers.google.com/drive/web/handle-errors#implementing_exponential_backoff
+
+
+ 
+ */
+
+
+ 
+class Google_Task_Runner
+
+
+ 
+{
+
+
+ 
+  const TASK_RETRY_NEVER = 0;
+
+
+ 
+  const TASK_RETRY_ONCE = 1;
+
+
+ 
+  const TASK_RETRY_ALWAYS = -1;
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @var integer $maxDelay The max time (in seconds) to wait before a retry.
+
+
+ 
+   */
+ 
+@@ -68,6 +68,21 @@ class Google_Task_Runner
+
+
+ 
+   */
+
+
+ 
+  private $arguments;
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @var array $retryMap Map of errors with retry counts.
+
+
+ 
+   */
+
+
+ 
+  protected $retryMap = [
+
+
+ 
+    '500' => self::TASK_RETRY_ALWAYS,
+
+
+ 
+    '503' => self::TASK_RETRY_ALWAYS,
+
+
+ 
+    'rateLimitExceeded' => self::TASK_RETRY_ALWAYS,
+
+
+ 
+    'userRateLimitExceeded' => self::TASK_RETRY_ALWAYS,
+
+
+ 
+    CURLE_COULDNT_RESOLVE_HOST => self::TASK_RETRY_ALWAYS,
+
+
+ 
+    CURLE_COULDNT_CONNECT => self::TASK_RETRY_ALWAYS,
+
+
+ 
+    CURLE_OPERATION_TIMEOUTED => self::TASK_RETRY_ALWAYS,
+
+
+ 
+    CURLE_SSL_CONNECT_ERROR => self::TASK_RETRY_ALWAYS,
+
+
+ 
+    CURLE_GOT_NOTHING => self::TASK_RETRY_ALWAYS
+
+
+ 
+  ];
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * Creates a new task runner with exponential backoff support.
+
+
+ 
+   *
+ 
+@@ -148,7 +163,7 @@ public function __construct(
+
+
+ 
+   *
+
+
+ 
+   * @return boolean
+
+
+ 
+   */
+
+
+ 
+  public function canAttmpt()
+
+
+ 
+  public function canAttempt()
+
+
+ 
+  {
+
+
+ 
+    return $this->attempts < $this->maxAttempts;
+
+
+ 
+  }
+ 
+@@ -164,10 +179,10 @@ public function run()
+
+
+ 
+    while ($this->attempt()) {
+
+
+ 
+      try {
+
+
+ 
+        return call_user_func_array($this->action, $this->arguments);
+
+
+ 
+      } catch (Google_Task_Retryable $exception) {
+
+
+ 
+        $allowedRetries = $exception->allowedRetries();
+
+
+ 
+      } catch (Google_Service_Exception $exception) {
+
+
+ 
+        $allowedRetries = $this->allowedRetries($exception->getCode(), $exception->getErrors());
+
+
+ 
+
+
+
+ 
+        if (!$this->canAttmpt() || !$allowedRetries) {
+
+
+ 
+        if (!$this->canAttempt() || !$allowedRetries) {
+
+
+ 
+          throw $exception;
+
+
+ 
+        }
+
+
+ 
+
+ 
+@@ -192,7 +207,7 @@ public function run()
+
+
+ 
+   */
+
+
+ 
+  public function attempt()
+
+
+ 
+  {
+
+
+ 
+    if (!$this->canAttmpt()) {
+
+
+ 
+    if (!$this->canAttempt()) {
+
+
+ 
+      return false;
+
+
+ 
+    }
+
+
+ 
+
+ 
+@@ -237,4 +252,30 @@ private function getJitter()
+
+
+ 
+  {
+
+
+ 
+    return $this->jitter * 2 * mt_rand() / mt_getrandmax() - $this->jitter;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * Gets the number of times the associated task can be retried.
+
+
+ 
+   *
+
+
+ 
+   * NOTE: -1 is returned if the task can be retried indefinitely
+
+
+ 
+   *
+
+
+ 
+   * @return integer
+
+
+ 
+   */
+
+
+ 
+  public function allowedRetries($code, $errors = array())
+
+
+ 
+  {
+
+
+ 
+    if (isset($this->retryMap[$code])) {
+
+
+ 
+      return $this->retryMap[$code];
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    if (!empty($errors) && isset($errors[0]['reason']) &&
+
+
+ 
+        isset($this->retryMap[$errors[0]['reason']])) {
+
+
+ 
+      return $this->retryMap[$errors[0]['reason']];
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    return 0;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function setRetryMap($retryMap)
+
+
+ 
+  {
+
+
+ 
+    $this->retryMap = $retryMap;
+
+
+ 
+  }
+
+
+ 
+}
+ 
+View file 
+ 
+36 src/Google/autoload.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+2 style/ruleset.xml 
+ 
+@@ -21,6 +21,8 @@
+
+
+ 
+  <properties>
+
+
+ 
+   <property name="strict" value="false"/>
+
+
+ 
+  </properties>
+
+
+ 
+  <!-- Generated libs have some properties that break this! -->
+
+
+ 
+  <exclude-pattern>Service/*.php</exclude-pattern>
+
+
+ 
+ </rule>
+
+
+ 
+
+
+
+ 
+ <!-- All PHP files MUST use the Unix LF (linefeed) line ending. -->
+ 
+
+ 
+View file 
+ 
+135 tests/BaseTest.php 
+ 
+@@ -19,63 +19,138 @@ class BaseTest extends PHPUnit_Framework_TestCase
+
+
+ 
+{
+
+
+ 
+  private $key;
+
+
+ 
+  private $token;
+
+
+ 
+  private $client;
+
+
+ 
+  private $memcacheHost;
+
+
+ 
+  private $memcachePort;
+
+
+ 
+  protected $testDir = __DIR__;
+
+
+ 
+
+
+
+ 
+  public function __construct()
+
+
+ 
+  public function getClient()
+
+
+ 
+  {
+
+
+ 
+    parent::__construct();
+
+
+ 
+    if (!$this->client) {
+
+
+ 
+      $this->client = $this->createClient();
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $this->token = $this->loadToken();
+
+
+ 
+    $this->memcacheHost = getenv('MEMCACHE_HOST') ? getenv('MEMCACHE_HOST') : null;
+
+
+ 
+    $this->memcachePort = getenv('MEMCACHE_PORT') ? getenv('MEMCACHE_PORT') : null;
+
+
+ 
+    return $this->client;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function getClient()
+
+
+ 
+  public function getCache()
+
+
+ 
+  {
+
+
+ 
+    return new Google_Cache_File(sys_get_temp_dir().'/google-api-php-client-tests');
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  private function createClient()
+
+
+ 
+  {
+
+
+ 
+    $defaults = [
+
+
+ 
+      'auth' => 'google_auth',
+
+
+ 
+      'exceptions' => false
+
+
+ 
+    ];
+
+
+ 
+    if ($proxy = getenv('HTTP_PROXY')) {
+
+
+ 
+      $defaults['proxy'] = $proxy;
+
+
+ 
+      $defaults['verify'] = false;
+
+
+ 
+    }
+
+
+ 
+    $httpClient = new GuzzleHttp\Client([
+
+
+ 
+      'defaults' => $defaults,
+
+
+ 
+    ]);
+
+
+ 
+
+
+
+ 
+    $client = new Google_Client();
+
+
+ 
+    $client->setHttpClient($httpClient);
+
+
+ 
+    $client->setScopes([
+
+
+ 
+        "https://www.googleapis.com/auth/plus.me",
+
+
+ 
+        "https://www.googleapis.com/auth/urlshortener",
+
+
+ 
+        "https://www.googleapis.com/auth/tasks",
+
+
+ 
+        "https://www.googleapis.com/auth/adsense",
+
+
+ 
+        "https://www.googleapis.com/auth/youtube",
+
+
+ 
+    ]);
+
+
+ 
+
+
+
+ 
+    if ($this->key) {
+
+
+ 
+      $client->setDeveloperKey($this->key);
+
+
+ 
+    }
+
+
+ 
+    if (strlen($this->token)) {
+
+
+ 
+    if ($this->token) {
+
+
+ 
+      $client->setAccessToken($this->token);
+
+
+ 
+    }
+
+
+ 
+    if (strlen($this->memcacheHost)) {
+
+
+ 
+      $client->setClassConfig('Google_Cache_Memcache', 'host', $this->memcacheHost);
+
+
+ 
+      $client->setClassConfig('Google_Cache_Memcache', 'port', $this->memcachePort);
+
+
+ 
+    }
+
+
+ 
+    if ($proxy = getenv('HTTP_PROXY')) {
+
+
+ 
+      $httpClient = new GuzzleHttp\Client([
+
+
+ 
+        'defaults' => [
+
+
+ 
+          'proxy'  => $proxy,
+
+
+ 
+          'verify' => false,
+
+
+ 
+        ]
+
+
+ 
+      ]);
+
+
+ 
+      $client->setHttpClient($httpClient);
+
+
+ 
+    }
+
+
+ 
+    list($clientId, $clientSecret) = $this->getClientIdAndSecret();
+
+
+ 
+    $client->setClientId($clientId);
+
+
+ 
+    $client->setClientSecret($clientSecret);
+
+
+ 
+    $client->setCache($this->getCache());
+
+
+ 
+
+
+
+ 
+    return $client;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function checkToken()
+
+
+ 
+  {
+
+
+ 
+    if (!strlen($this->token)) {
+
+
+ 
+      $this->markTestSkipped("Test requires access token\nrun \"php tests/OAuthHelper.php\"");
+
+
+ 
+      return false;
+
+
+ 
+    $cache = $this->getCache();
+
+
+ 
+    $this->token = $cache->get('access_token');
+
+
+ 
+    if (!$this->token) {
+
+
+ 
+      if (!$this->tryToGetAnAccessToken()) {
+
+
+ 
+        return $this->markTestSkipped("Test requires access token");
+
+
+ 
+      }
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    $client->setAccessToken($this->token);
+
+
+ 
+
+
+
+ 
+    if ($client->isAccessTokenExpired()) {
+
+
+ 
+      if (isset($this->token['refresh_token'])) {
+
+
+ 
+        $this->token = $client->refreshToken($this->token['refresh_token']);
+
+
+ 
+      }
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $cache->set('access_token', $this->token);
+
+
+ 
+
+
+
+ 
+    return true;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function loadToken()
+
+
+ 
+  public function tryToGetAnAccessToken()
+
+
+ 
+  {
+
+
+ 
+    if (file_exists($f = dirname(__FILE__) . DIRECTORY_SEPARATOR . '.accessToken')) {
+
+
+ 
+      $t = file_get_contents($f);
+
+
+ 
+      if ($token = json_decode($t, true)) {
+
+
+ 
+        if ($token['expires_in'] + $token['created'] > time()) {
+
+
+ 
+          return $t;
+
+
+ 
+        }
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    if (!($client->getClientId() && $client->getClientSecret())) {
+
+
+ 
+      $this->markTestSkipped("Test requires GCLOUD_CLIENT_ID and GCLOUD_CLIENT_SECRET to be set");
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    $client->setRedirectUri("urn:ietf:wg:oauth:2.0:oob");
+
+
+ 
+    $client->setConfig('access_type', 'offline');
+
+
+ 
+    $authUrl = $client->createAuthUrl();
+
+
+ 
+
+
+
+ 
+    echo "\nPlease enter the auth code:\n";
+
+
+ 
+    ob_flush();
+
+
+ 
+    `open '$authUrl'`;
+
+
+ 
+    $authCode = trim(fgets(STDIN));
+
+
+ 
+
+
+
+ 
+    if ($accessToken = $client->authenticate($authCode)) {
+
+
+ 
+      if (isset($accessToken['access_token'])) {
+
+
+ 
+        $this->token = $accessToken;
+
+
+ 
+
+
+
+ 
+        return true;
+
+
+ 
+      }
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    return false;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  private function getClientIdAndSecret()
+
+
+ 
+  {
+
+
+ 
+    $clientId = getenv('GCLOUD_CLIENT_ID') ? getenv('GCLOUD_CLIENT_ID') : null;
+
+
+ 
+    $clientSecret = getenv('GCLOUD_CLIENT_SECRET') ? getenv('GCLOUD_CLIENT_SECRET') : null;
+
+
+ 
+
+
+
+ 
+    return array($clientId, $clientSecret);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function checkServiceAccountToken()
+
+
+ 
+  {
+
+
+ 
+    if (!$f = getenv('GOOGLE_APPLICATION_CREDENTIALS')) {
+
+
+ 
+      $skip = "This test requires the GOOGLE_APPLICATION_CREDENTIALS environment variable to be set\n"
+
+
+ 
+        . "see https://developers.google.com/accounts/docs/application-default-credentials";
+
+
+ 
+      $this->markTestSkipped($skip);
+
+
+ 
+
+
+
+ 
+      return false;
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    if (!file_exists($f)) {
+
+
+ 
+      $this->markTestSkipped('invalid path for GOOGLE_APPLICATION_CREDENTIALS');
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    return true;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function checkKey()
+ 
+
+ 
+View file 
+ 
+160 tests/Google/AccessTokenTest.php 
+
+
+@@ -0,0 +1,160 @@
+
+
+ 
+<?php
+
+
+ 
+
+
+
+ 
+use GuzzleHttp\Message\Request;
+
+
+ 
+use GuzzleHttp\Client;
+
+
+ 
+
+
+
+ 
+/**
+
+
+ 
+ * Licensed to the Apache Software Foundation (ASF) under one
+
+
+ 
+ * or more contributor license agreements.  See the NOTICE file
+
+
+ 
+ * distributed with this work for additional information
+
+
+ 
+ * regarding copyright ownership.  The ASF licenses this file
+
+
+ 
+ * to you under the Apache License, Version 2.0 (the
+
+
+ 
+ * "License"); you may not use this file except in compliance
+
+
+ 
+ * with the License.  You may obtain a copy of the License at
+
+
+ 
+ *
+
+
+ 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+
+
+ 
+ *
+
+
+ 
+ * Unless required by applicable law or agreed to in writing,
+
+
+ 
+ * software distributed under the License is distributed on an
+
+
+ 
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+
+
+ 
+ * KIND, either express or implied.  See the License for the
+
+
+ 
+ * specific language governing permissions and limitations
+
+
+ 
+ * under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+class Google_AccessTokenTest extends BaseTest
+
+
+ 
+{
+
+
+ 
+  public function testRevokeAccess()
+
+
+ 
+  {
+
+
+ 
+    $accessToken = "ACCESS_TOKEN";
+
+
+ 
+    $refreshToken = "REFRESH_TOKEN";
+
+
+ 
+    $accessToken2 = "ACCESS_TOKEN_2";
+
+
+ 
+    $token = "";
+
+
+ 
+
+
+
+ 
+    $postBody = $this->getMock('GuzzleHttp\Post\PostBodyInterface');
+
+
+ 
+    $postBody->expects($this->exactly(3))
+
+
+ 
+      ->method('replaceFields')
+
+
+ 
+      ->will($this->returnCallback(
+
+
+ 
+            function ($fields) use (&$token) {
+
+
+ 
+              $token = isset($fields['token']) ? $fields['token'] : null;
+
+
+ 
+            }
+
+
+ 
+        ));
+
+
+ 
+    $request = $this->getMock('GuzzleHttp\Message\RequestInterface');
+
+
+ 
+    $request->expects($this->exactly(3))
+
+
+ 
+      ->method('getBody')
+
+
+ 
+      ->will($this->returnValue($postBody));
+
+
+ 
+    $response = $this->getMock('GuzzleHttp\Message\ResponseInterface');
+
+
+ 
+    $response->expects($this->exactly(3))
+
+
+ 
+      ->method('getStatusCode')
+
+
+ 
+      ->will($this->returnValue(200));
+
+
+ 
+    $http = $this->getMock('GuzzleHttp\ClientInterface');
+
+
+ 
+    $http->expects($this->exactly(3))
+
+
+ 
+      ->method('send')
+
+
+ 
+      ->will($this->returnValue($response));
+
+
+ 
+    $http->expects($this->exactly(3))
+
+
+ 
+      ->method('createRequest')
+
+
+ 
+      ->will($this->returnValue($request));
+
+
+ 
+
+
+
+ 
+    // Test with access token.
+
+
+ 
+    $t = new Google_AccessToken(
+
+
+ 
+      array(
+
+
+ 
+        'access_token' => $accessToken,
+
+
+ 
+        'created' => time(),
+
+
+ 
+        'expires_in' => '3600'
+
+
+ 
+      ),
+
+
+ 
+      $http
+
+
+ 
+    );
+
+
+ 
+    $this->assertTrue($t->revokeToken());
+
+
+ 
+    $this->assertEquals($accessToken, $token);
+
+
+ 
+
+
+
+ 
+    // Test with refresh token.
+
+
+ 
+    $t->setAccessToken(
+
+
+ 
+      array(
+
+
+ 
+        'access_token' => $accessToken,
+
+
+ 
+        'refresh_token' => $refreshToken,
+
+
+ 
+        'created' => time(),
+
+
+ 
+        'expires_in' => '3600'
+
+
+ 
+      )
+
+
+ 
+    );
+
+
+ 
+    $this->assertTrue($t->revokeToken());
+
+
+ 
+    $this->assertEquals($refreshToken, $token);
+
+
+ 
+
+
+
+ 
+    // Test with string token
+
+
+ 
+    $t->setAccessToken($accessToken2);
+
+
+ 
+    $this->assertTrue($t->revokeToken());
+
+
+ 
+    $this->assertEquals($accessToken2, $token);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  // /**
+
+
+ 
+  //  * Most of the logic for ID token validation is in AuthTest -
+
+
+ 
+  //  * this is just a general check to ensure we verify a valid
+
+
+ 
+  //  * id token if one exists.
+
+
+ 
+  //  */
+
+
+ 
+  // public function testValidateIdToken()
+
+
+ 
+  // {
+
+
+ 
+  //   $this->checkToken();
+
+
+ 
+  //   $client = $this->getClient();
+
+
+ 
+  //   $token = json_decode($client->getAccessToken());
+
+
+ 
+  //   $segments = explode(".", $token->id_token);
+
+
+ 
+  //   $this->assertEquals(3, count($segments));
+
+
+ 
+  //   // Extract the client ID in this case as it wont be set on the test client.
+
+
+ 
+  //   $data = json_decode(JWT::urlSafeB64Decode($segments[1]));
+
+
+ 
+  //   $oauth = new Google_Auth_OAuth2($client);
+
+
+ 
+  //   $payload = $oauth->verifyIdToken($token->id_token, $data->aud);
+
+
+ 
+  //   $this->assertArrayHasKey('sub', $payload);
+
+
+ 
+  //   $this->assertTrue(strlen($payload['sub']) > 0);
+
+
+ 
+
+
+
+ 
+  //   // TODO: Need to be smart about testing/disabling the
+
+
+ 
+  //   // caching for this test to make sense. Not sure how to do that
+
+
+ 
+  //   // at the moment.
+
+
+ 
+  //   $client = $this->getClient();
+
+
+ 
+  //   $data = json_decode(JWT::urlSafeB64Decode($segments[1]));
+
+
+ 
+  //   $oauth = new Google_Auth_OAuth2($client);
+
+
+ 
+  //   $payload = $oauth->verifyIdToken($token->id_token, $data->aud);
+
+
+ 
+  //   $this->assertArrayHasKey('sub', $payload);
+
+
+ 
+  //   $this->assertTrue(strlen($payload['sub']) > 0);
+
+
+ 
+  // }
+
+
+ 
+
+
+
+ 
+  // /**
+
+
+ 
+  //  * Test for revoking token when none is opened
+
+
+ 
+  //  */
+
+
+ 
+  // public function testRevokeWhenNoTokenExists()
+
+
+ 
+  // {
+
+
+ 
+  //   $client = new Google_Client();
+
+
+ 
+  //   $this->assertFalse($client->revokeToken());
+
+
+ 
+  // }
+
+
+ 
+
+
+
+ 
+  // /**
+
+
+ 
+  //  * Test that the ID token is properly refreshed.
+
+
+ 
+  //  */
+
+
+ 
+  // public function testRefreshTokenSetsValues()
+
+
+ 
+  // {
+
+
+ 
+  //   $client = new Google_Client();
+
+
+ 
+  //   $request = $this->getMock('GuzzleHttp\Message\RequestInterface');
+
+
+ 
+  //   $request->expects($this->once())
+
+
+ 
+  //     ->method('getBody')
+
+
+ 
+  //     ->will($this->returnValue($this->getMock('GuzzleHttp\Post\PostBodyInterface')));
+
+
+ 
+  //   $response = $this->getMock('GuzzleHttp\Message\ResponseInterface');
+
+
+ 
+  //   $response->expects($this->once())
+
+
+ 
+  //     ->method('json')
+
+
+ 
+  //     ->will($this->returnValue(array(
+
+
+ 
+  //         'access_token' => 'xyz',
+
+
+ 
+  //         'id_token' => 'ID_TOKEN',
+
+
+ 
+  //       )));
+
+
+ 
+  //   $response->expects($this->once())
+
+
+ 
+  //     ->method('getBody')
+
+
+ 
+  //     ->will($this->returnValue($this->getMock('GuzzleHttp\Post\PostBody')));
+
+
+ 
+  //   $http = $this->getMock('GuzzleHttp\ClientInterface');
+
+
+ 
+  //   $http->expects($this->once())
+
+
+ 
+  //     ->method('send')
+
+
+ 
+  //     ->will($this->returnValue($response));
+
+
+ 
+  //   $http->expects($this->once())
+
+
+ 
+  //     ->method('createRequest')
+
+
+ 
+  //     ->will($this->returnValue($request));
+
+
+ 
+  //   $client->setHttpClient($http);
+
+
+ 
+  //   $oauth = new Google_Auth_OAuth2($client);
+
+
+ 
+  //   $oauth->refreshToken("REFRESH_TOKEN");
+
+
+ 
+  //   $token = json_decode($oauth->getAccessToken(), true);
+
+
+ 
+  //   $this->assertEquals($token['id_token'], "ID_TOKEN");
+
+
+ 
+  // }
+
+
+ 
+}
+ 
+View file 
+ 
+83 tests/Google/Auth/ComputeEngineTest.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+251 tests/Google/Auth/OAuth2Test.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+28 tests/Google/CacheTest.php 
+ 
+@@ -23,28 +23,16 @@ class Google_CacheTest extends BaseTest
+
+
+ 
+  public function testFile()
+
+
+ 
+  {
+
+
+ 
+    $dir = sys_get_temp_dir() . '/google-api-php-client/tests';
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    $client->setClassConfig(
+
+
+ 
+        'Google_Cache_File',
+
+
+ 
+        'directory',
+
+
+ 
+        $dir
+
+
+ 
+    );
+
+
+ 
+    $cache = new Google_Cache_File($client);
+
+
+ 
+    $cache = new Google_Cache_File($dir);
+
+
+ 
+    $cache->set('foo', 'bar');
+
+
+ 
+    $this->assertEquals($cache->get('foo'), 'bar');
+
+
+ 
+
+
+
+ 
+    $this->getSetDelete($cache);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @requires extension Memcache
+
+
+ 
+   */
+
+
+ 
+  public function testNull()
+
+
+ 
+  {
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    $cache = new Google_Cache_Null($client);
+
+
+ 
+    $client->setCache($cache);
+
+
+ 
+
+
+
+ 
+    $cache = new Google_Cache_Null();
+
+
+ 
+    $cache->set('foo', 'bar');
+
+
+ 
+    $cache->delete('foo');
+
+
+ 
+    $this->assertEquals(false, $cache->get('foo'));
+ 
+@@ -65,12 +53,13 @@ public function testNull()
+
+
+ 
+   */
+
+
+ 
+  public function testMemcache()
+
+
+ 
+  {
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    if (!$client->getClassConfig('Google_Cache_Memcache', 'host')) {
+
+
+ 
+      $this->markTestSkipped('Test requires memcache host specified');
+
+
+ 
+    $host = getenv('MEMCACHE_HOST') ? getenv('MEMCACHE_HOST') : null;
+
+
+ 
+    $port = getenv('MEMCACHE_PORT') ? getenv('MEMCACHE_PORT') : null;
+
+
+ 
+    if (!($host && $port)) {
+
+
+ 
+      $this->markTestSkipped('Test requires memcache host and port specified');
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $cache = new Google_Cache_Memcache($client);
+
+
+ 
+    $cache = new Google_Cache_Memcache($host, $port);
+
+
+ 
+
+
+
+ 
+    $this->getSetDelete($cache);
+
+
+ 
+  }
+ 
+@@ -83,8 +72,7 @@ public function testAPC()
+
+
+ 
+    if (!ini_get('apc.enable_cli')) {
+
+
+ 
+      $this->markTestSkipped('Test requires APC enabled for CLI');
+
+
+ 
+    }
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    $cache = new Google_Cache_Apc($client);
+
+
+ 
+    $cache = new Google_Cache_Apc();
+
+
+ 
+
+
+
+ 
+    $this->getSetDelete($cache);
+
+
+ 
+  }
+ 
+
+ 
+View file 
+ 
+182 tests/Google/ClientTest.php 
+ 
+@@ -18,38 +18,103 @@
+
+
+ 
+ * under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+use GuzzleHttp\Client;
+
+
+ 
+use GuzzleHttp\Event\RequestEvents;
+
+
+ 
+use GuzzleHttp\Message\Request;
+
+
+ 
+
+
+
+ 
+class Google_ClientTest extends BaseTest
+
+
+ 
+{
+
+
+ 
+  public function testClient()
+
+
+ 
+  public function testClientConstructor()
+
+
+ 
+  {
+
+
+ 
+    $client = new Google_Client();
+
+
+ 
+    $client->setAccessType('foo');
+
+
+ 
+    $client->setDeveloperKey('foo');
+
+
+ 
+    $req = new Request('GET', 'http://foo.com');
+
+
+ 
+    $client->getAuth()->sign($req);
+
+
+ 
+    $key = $req->getQuery()->get('key');
+
+
+ 
+    $this->assertEquals('foo', $key);
+
+
+ 
+
+
+
+ 
+    $client->setAccessToken(json_encode(array('access_token' => '1')));
+
+
+ 
+    $this->assertEquals("{\"access_token\":\"1\"}", $client->getAccessToken());
+
+
+ 
+    $this->assertInstanceOf('Google_Client', $this->getClient());
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testClientConstructor()
+
+
+ 
+  public function testSignAppKey()
+
+
+ 
+  {
+
+
+ 
+    $this->assertInstanceOf('Google_Client', $this->getClient());
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    $client->setDeveloperKey('devKey');
+
+
+ 
+
+
+
+ 
+    $http = new Client();
+
+
+ 
+    $client->attachAuthListener($http);
+
+
+ 
+
+
+
+ 
+    $listeners = $http->getEmitter()->listeners('before');
+
+
+ 
+    $this->assertEquals(1, count($listeners));
+
+
+ 
+    $this->assertEquals(2, count($listeners[0]));
+
+
+ 
+    $this->assertInstanceOf('Google\Auth\Simple', $listeners[0][0]);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+
+
+ 
+   * @expectedException Google_Auth_Exception
+
+
+ 
+   */
+
+
+ 
+  public function testPrepareInvalidScopes()
+
+
+ 
+  public function testSignAccessToken()
+
+
+ 
+  {
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+
+
+
+ 
+    $http = new Client();
+
+
+ 
+    $client->setAccessToken([
+
+
+ 
+      'access_token' => 'test_token',
+
+
+ 
+      'expires_in'   => 3600,
+
+
+ 
+      'created'      => time(),
+
+
+ 
+    ]);
+
+
+ 
+    $client->setScopes('test_scope');
+
+
+ 
+    $client->attachAuthListener($http);
+
+
+ 
+
+
+
+ 
+    $listeners = $http->getEmitter()->listeners('before');
+
+
+ 
+    $this->assertEquals(1, count($listeners));
+
+
+ 
+    $this->assertEquals(2, count($listeners[0]));
+
+
+ 
+    $this->assertInstanceOf('Google\Auth\ScopedAccessToken', $listeners[0][0]);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testCreateAuthUrl()
+
+
+ 
+  {
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+
+
+
+ 
+    $client->setClientId('clientId1');
+
+
+ 
+    $client->setClientSecret('clientSecret1');
+
+
+ 
+    $client->setRedirectUri('http://localhost');
+
+
+ 
+    $client->setDeveloperKey('devKey');
+
+
+ 
+    $client->setState('xyz');
+
+
+ 
+    $client->setConfig('access_type', 'offline');
+
+
+ 
+    $client->setConfig('approval_prompt', 'force');
+
+
+ 
+    $client->setConfig('request_visible_actions', 'http://foo');
+
+
+ 
+    $client->setConfig('login_hint', 'bob@example.org');
+
+
+ 
+
+
+
+ 
+    $authUrl = $client->createAuthUrl("http://googleapis.com/scope/foo");
+
+
+ 
+    $expected = "https://accounts.google.com/o/oauth2/auth"
+
+
+ 
+        . "?access_type=offline"
+
+
+ 
+        . "&approval_prompt=force"
+
+
+ 
+        . "&login_hint=bob%40example.org"
+
+
+ 
+        . "&response_type=code"
+
+
+ 
+        . "&scope=http%3A%2F%2Fgoogleapis.com%2Fscope%2Ffoo"
+
+
+ 
+        . "&state=xyz"
+
+
+ 
+        . "&client_id=clientId1"
+
+
+ 
+        . "&redirect_uri=http%3A%2F%2Flocalhost";
+
+
+ 
+    $this->assertEquals($expected, $authUrl);
+
+
+ 
+
+
+
+ 
+    // Again with a blank login hint (should remove all traces from authUrl)
+
+
+ 
+    $client->setConfig('login_hint', '');
+
+
+ 
+    $client->setConfig('hosted_domain', 'example.com');
+
+
+ 
+    $client->setConfig('openid.realm', 'example.com');
+
+
+ 
+    $client->setConfig('prompt', 'select_account');
+
+
+ 
+    $client->setConfig('include_granted_scopes', true);
+
+
+ 
+    $authUrl = $client->createAuthUrl("http://googleapis.com/scope/foo");
+
+
+ 
+    $expected = "https://accounts.google.com/o/oauth2/auth"
+
+
+ 
+        . "?access_type=offline"
+
+
+ 
+        . "&hd=example.com"
+
+
+ 
+        . "&include_granted_scopes=true"
+
+
+ 
+        . "&openid.realm=example.com"
+
+
+ 
+        . "&prompt=select_account"
+
+
+ 
+        . "&response_type=code"
+
+
+ 
+        . "&scope=http%3A%2F%2Fgoogleapis.com%2Fscope%2Ffoo"
+
+
+ 
+        . "&state=xyz"
+
+
+ 
+        . "&client_id=clientId1"
+
+
+ 
+        . "&redirect_uri=http%3A%2F%2Flocalhost";
+
+
+ 
+    $this->assertEquals($expected, $authUrl);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testPrepareNoScopes()
+
+
+ 
+  {
+
+
+ 
+    $client = new Google_Client();
+
+
+ 
+
+
+
+ 
+    $scopes = $client->prepareScopes();
+
+
+ 
+    $this->assertEquals("", $scopes);
+
+
+ 
+    $this->assertEquals(null, $scopes);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testNoAuthIsNull()
+ 
+@@ -84,11 +149,11 @@ public function testPrepareService()
+
+
+ 
+    $this->assertEquals("http://test.com scope2", $scopes);
+
+
+ 
+    $this->assertEquals(
+
+
+ 
+        ''
+
+
+ 
+        .  'https://accounts.google.com/o/oauth2/auth'
+
+
+ 
+        . '?response_type=code'
+
+
+ 
+        . '&access_type=online'
+
+
+ 
+        . '&scope=http%3A%2F%2Ftest.com%20scope2'
+
+
+ 
+        . 'https://accounts.google.com/o/oauth2/auth'
+
+
+ 
+        . '?access_type=online'
+
+
+ 
+        . '&approval_prompt=auto'
+
+
+ 
+        . '&response_type=code'
+
+
+ 
+        . '&scope=http%3A%2F%2Ftest.com%20scope2'
+
+
+ 
+        . '&state=xyz'
+
+
+ 
+        . '&client_id=test1'
+
+
+ 
+        . '&redirect_uri=http%3A%2F%2Flocalhost%2F',
+ 
+@@ -110,6 +175,9 @@ public function testPrepareService()
+
+
+ 
+    $http->expects($this->once())
+
+
+ 
+      ->method('createRequest')
+
+
+ 
+      ->will($this->returnValue($request));
+
+
+ 
+    $http->expects($this->once())
+
+
+ 
+      ->method('getEmitter')
+
+
+ 
+      ->will($this->returnValue($this->getMock('GuzzleHttp\Event\EmitterInterface')));
+
+
+ 
+    $http->expects($this->once())
+
+
+ 
+      ->method('send')
+
+
+ 
+      ->will($this->returnValue($response));
+ 
+@@ -124,25 +192,21 @@ public function testSettersGetters()
+
+
+ 
+    $client->setClientId("client1");
+
+
+ 
+    $client->setClientSecret('client1secret');
+
+
+ 
+    $client->setState('1');
+
+
+ 
+    $client->setApprovalPrompt('force');
+
+
+ 
+    $client->setAccessType('offline');
+
+
+ 
+    $client->setConfig('approval_prompt', 'force');
+
+
+ 
+    $client->setConfig('access_type', 'offline');
+
+
+ 
+
+
+
+ 
+    $client->setRedirectUri('localhost');
+
+
+ 
+    $client->setApplicationName('me');
+
+
+ 
+    $this->assertEquals('object', gettype($client->getAuth()));
+
+
+ 
+    $client->setConfig('application_name', 'me');
+
+
+ 
+    $this->assertEquals('object', gettype($client->getCache()));
+
+
+ 
+
+
+
+ 
+    $client->setAuth(new Google_Auth_Simple($client));
+
+
+ 
+    $client->setAuth(new Google_Auth_OAuth2($client));
+
+
+ 
+
+
+
+ 
+    try {
+
+
+ 
+      $client->setAccessToken(null);
+
+
+ 
+      $this->fail('Should have thrown an Google_Auth_Exception.');
+
+
+ 
+    } catch (Google_Auth_Exception $e) {
+
+
+ 
+      $this->assertEquals('Could not json decode the token', $e->getMessage());
+
+
+ 
+    } catch (InvalidArgumentException $e) {
+
+
+ 
+      $this->assertEquals('invalid json token', $e->getMessage());
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $token = json_encode(array('access_token' => 'token'));
+
+
+ 
+    $token = array('access_token' => 'token');
+
+
+ 
+    $client->setAccessToken($token);
+
+
+ 
+    $this->assertEquals($token, $client->getAccessToken());
+
+
+ 
+  }
+ 
+@@ -161,8 +225,7 @@ public function testAppEngineAutoConfig()
+
+
+ 
+  public function testJsonConfig()
+
+
+ 
+  {
+
+
+ 
+    // Device config
+
+
+ 
+    $config = new Google_Config();
+
+
+ 
+    $client = new Google_Client($config);
+
+
+ 
+    $client = new Google_Client();
+
+
+ 
+    $device =
+
+
+ 
+    '{"installed":{"auth_uri":"https://accounts.google.com/o/oauth2/auth","client_secret"'.
+
+
+ 
+    ':"N0aHCBT1qX1VAcF5J1pJAn6S","token_uri":"https://accounts.google.com/o/oauth2/token",'.
+ 
+@@ -171,14 +234,12 @@ public function testJsonConfig()
+
+
+ 
+    '"https://www.googleapis.com/oauth2/v1/certs"}}';
+
+
+ 
+    $dObj = json_decode($device);
+
+
+ 
+    $client->setAuthConfig($device);
+
+
+ 
+    $cfg = $config->getClassConfig('Google_Auth_OAuth2');
+
+
+ 
+    $this->assertEquals($cfg['client_id'], $dObj->installed->client_id);
+
+
+ 
+    $this->assertEquals($cfg['client_secret'], $dObj->installed->client_secret);
+
+
+ 
+    $this->assertEquals($cfg['redirect_uri'], $dObj->installed->redirect_uris[0]);
+
+
+ 
+    $this->assertEquals($client->getClientId(), $dObj->installed->client_id);
+
+
+ 
+    $this->assertEquals($client->getClientSecret(), $dObj->installed->client_secret);
+
+
+ 
+    $this->assertEquals($client->getRedirectUri(), $dObj->installed->redirect_uris[0]);
+
+
+ 
+
+
+
+ 
+    // Web config
+
+
+ 
+    $config = new Google_Config();
+
+
+ 
+    $client = new Google_Client($config);
+
+
+ 
+    $client = new Google_Client();
+
+
+ 
+    $web = '{"web":{"auth_uri":"https://accounts.google.com/o/oauth2/auth","client_secret"' .
+
+
+ 
+      ':"lpoubuib8bj-Fmke_YhhyHGgXc","token_uri":"https://accounts.google.com/o/oauth2/token"' .
+
+
+ 
+      ',"client_email":"123456789@developer.gserviceaccount.com","client_x509_cert_url":'.
+ 
+@@ -187,40 +248,41 @@ public function testJsonConfig()
+
+
+ 
+      '"https://www.googleapis.com/oauth2/v1/certs"}}';
+
+
+ 
+    $wObj = json_decode($web);
+
+
+ 
+    $client->setAuthConfig($web);
+
+
+ 
+    $cfg = $config->getClassConfig('Google_Auth_OAuth2');
+
+
+ 
+    $this->assertEquals($cfg['client_id'], $wObj->web->client_id);
+
+
+ 
+    $this->assertEquals($cfg['client_secret'], $wObj->web->client_secret);
+
+
+ 
+    $this->assertEquals($cfg['redirect_uri'], '');
+
+
+ 
+    $this->assertEquals($client->getClientId(), $wObj->web->client_id);
+
+
+ 
+    $this->assertEquals($client->getClientSecret(), $wObj->web->client_secret);
+
+
+ 
+    $this->assertEquals($client->getRedirectUri(), '');
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testIniConfig()
+
+
+ 
+  {
+
+
+ 
+    $config = new Google_Config($this->testDir . "/config/test.ini");
+
+
+ 
+    $this->assertEquals('My Test application', $config->getApplicationName());
+
+
+ 
+    $config = parse_ini_file($this->testDir . "/config/test.ini");
+
+
+ 
+    $client = new Google_Client($config);
+
+
+ 
+
+
+
+ 
+    $this->assertEquals('My Test application', $client->getConfig('application_name'));
+
+
+ 
+    $this->assertEquals(
+
+
+ 
+        'gjfiwnGinpena3',
+
+
+ 
+        $config->getClassConfig('Google_Auth_OAuth2', 'client_secret')
+
+
+ 
+    );
+
+
+ 
+    $this->assertInternalType(
+
+
+ 
+        'array',
+
+
+ 
+        $config->getClassConfig('Google_IO_Abstract')
+
+
+ 
+    );
+
+
+ 
+    $this->assertEquals(
+
+
+ 
+        100,
+
+
+ 
+        $config->getClassConfig('Google_IO_Abstract', 'request_timeout_seconds')
+
+
+ 
+        $client->getClientSecret()
+
+
+ 
+    );
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testNoAuth()
+
+
+ 
+  {
+
+
+ 
+    /** @var $noAuth Google_Auth_Simple */
+
+
+ 
+    $noAuth = new Google_Auth_Simple($this->getClient());
+
+
+ 
+    $client = new Google_Client();
+
+
+ 
+    $client->setAuth($noAuth);
+
+
+ 
+    $client->setDeveloperKey(null);
+
+
+ 
+    $req = new Request('GET', 'http://example.com');
+
+
+ 
+
+
+
+ 
+    $resp = $noAuth->sign($req);
+
+
+ 
+    $this->assertEquals('http://example.com', $resp->getUrl());
+
+
+ 
+    // unset application credentials
+
+
+ 
+    $GOOGLE_APPLICATION_CREDENTIALS = getenv('GOOGLE_APPLICATION_CREDENTIALS');
+
+
+ 
+    $HOME = getenv('HOME');
+
+
+ 
+    putenv('GOOGLE_APPLICATION_CREDENTIALS=');
+
+
+ 
+    putenv('HOME='.sys_get_temp_dir());
+
+
+ 
+    $http = new Client();
+
+
+ 
+    $client->attachAuthListener($http);
+
+
+ 
+
+
+
+ 
+    $listeners = $http->getEmitter()->listeners('before');
+
+
+ 
+
+
+
+ 
+    putenv("GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS");
+
+
+ 
+    putenv("HOME=$HOME");
+
+
+ 
+    $this->assertEquals(0, count($listeners));
+
+
+ 
+  }
+
+
+ 
+}
+ 
+View file 
+ 
+54 tests/Google/Http/BatchTest.php → tests/Google/Http/ParallelTest.php 
+ 
+@@ -18,25 +18,27 @@
+
+
+ 
+ * under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+class Google_Http_BatchTest extends BaseTest
+
+
+ 
+class Google_Http_ParallelTest extends BaseTest
+
+
+ 
+{
+
+
+ 
+  public $parallel;
+
+
+ 
+  public $plus;
+
+
+ 
+
+
+
+ 
+  public function testBatchRequestWithAuth()
+
+
+ 
+  public function setUp()
+
+
+ 
+  {
+
+
+ 
+    if (!$this->checkToken()) {
+
+
+ 
+      return;
+
+
+ 
+    }
+
+
+ 
+    $this->checkToken();
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    $batch = new Google_Http_Batch($client);
+
+
+ 
+    $client->setUseBatch(true);
+
+
+ 
+    $this->parallel = new Google_Http_Parallel($client);
+
+
+ 
+    $this->plus = new Google_Service_Plus($client);
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+    $client->setUseBatch(true);
+
+
+ 
+    $batch->add($this->plus->people->get('me'), 'key1');
+
+
+ 
+    $batch->add($this->plus->people->get('me'), 'key2');
+
+
+ 
+    $batch->add($this->plus->people->get('me'), 'key3');
+
+
+ 
+  public function testBatchRequestWithAuth()
+
+
+ 
+  {
+
+
+ 
+    $this->parallel->add($this->plus->people->get('me'), 'key1');
+
+
+ 
+    $this->parallel->add($this->plus->people->get('me'), 'key2');
+
+
+ 
+    $this->parallel->add($this->plus->people->get('me'), 'key3');
+
+
+ 
+
+
+
+ 
+    $result = $batch->execute();
+
+
+ 
+    $result = $this->parallel->execute();
+
+
+ 
+    $this->assertTrue(isset($result['response-key1']));
+
+
+ 
+    $this->assertTrue(isset($result['response-key2']));
+
+
+ 
+    $this->assertTrue(isset($result['response-key3']));
+ 
+@@ -47,19 +49,11 @@ public function testBatchRequestWithAuth()
+
+
+ 
+
+
+
+ 
+  public function testBatchRequest()
+
+
+ 
+  {
+
+
+ 
+    if (!$this->checkToken()) {
+
+
+ 
+      return;
+
+
+ 
+    }
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    $batch = new Google_Http_Batch($client);
+
+
+ 
+    $this->plus = new Google_Service_Plus($client);
+
+
+ 
+
+
+
+ 
+    $client->setUseBatch(true);
+
+
+ 
+    $batch->add($this->plus->people->get('+LarryPage'), 'key1');
+
+
+ 
+    $batch->add($this->plus->people->get('+LarryPage'), 'key2');
+
+
+ 
+    $batch->add($this->plus->people->get('+LarryPage'), 'key3');
+
+
+ 
+    $this->parallel->add($this->plus->people->get('+LarryPage'), 'key1');
+
+
+ 
+    $this->parallel->add($this->plus->people->get('+LarryPage'), 'key2');
+
+
+ 
+    $this->parallel->add($this->plus->people->get('+LarryPage'), 'key3');
+
+
+ 
+
+
+
+ 
+    $result = $batch->execute();
+
+
+ 
+    $result = $this->parallel->execute();
+
+
+ 
+    $this->assertTrue(isset($result['response-key1']));
+
+
+ 
+    $this->assertTrue(isset($result['response-key2']));
+
+
+ 
+    $this->assertTrue(isset($result['response-key3']));
+ 
+@@ -70,19 +64,15 @@ public function testBatchRequest()
+
+
+ 
+
+
+
+ 
+  public function testInvalidBatchRequest()
+
+
+ 
+  {
+
+
+ 
+    $client = $this->getClient();
+
+
+ 
+    $batch = new Google_Http_Batch($client);
+
+
+ 
+    $this->plus = new Google_Service_Plus($client);
+
+
+ 
+
+
+
+ 
+    $client->setUseBatch(true);
+
+
+ 
+    $batch->add($this->plus->people->get('123456789987654321'), 'key1');
+
+
+ 
+    $batch->add($this->plus->people->get('+LarryPage'), 'key2');
+
+
+ 
+    $this->parallel->add($this->plus->people->get('123456789987654321'), 'key1');
+
+
+ 
+    $this->parallel->add($this->plus->people->get('+LarryPage'), 'key2');
+
+
+ 
+
+
+
+ 
+    $result = $batch->execute();
+
+
+ 
+    $result = $this->parallel->execute();
+
+
+ 
+    $this->assertTrue(isset($result['response-key2']));
+
+
+ 
+    $this->assertInstanceOf(
+
+
+ 
+        'GuzzleHttp\Exception\ClientException',
+
+
+ 
+        'GuzzleHttp\Message\Response',
+
+
+ 
+        $result['response-key1']
+
+
+ 
+    );
+
+
+ 
+    $this->assertEquals(404, $result['response-key1']->getStatusCode());
+
+
+ 
+  }
+
+
+ 
+}
+ 
+View file 
+ 
+445 tests/Google/LoggerTest.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+10 tests/Google/Service/AdSenseTest.php 
+ 
+@@ -18,17 +18,14 @@
+
+
+ 
+class Google_Service_AdSenseTest extends BaseTest
+
+
+ 
+{
+
+
+ 
+  public $adsense;
+
+
+ 
+  public function __construct()
+
+
+ 
+  public function setUp()
+
+
+ 
+  {
+
+
+ 
+    parent::__construct();
+
+
+ 
+    $this->checkToken();
+
+
+ 
+    $this->adsense = new Google_Service_AdSense($this->getClient());
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testAccountsList()
+
+
+ 
+  {
+
+
+ 
+    if (!$this->checkToken()) {
+
+
+ 
+      return;
+
+
+ 
+    }
+
+
+ 
+    $accounts = $this->adsense->accounts->listAccounts();
+
+
+ 
+    $this->assertArrayHasKey('kind', $accounts);
+
+
+ 
+    $this->assertEquals($accounts['kind'], 'adsense#accounts');
+ 
+@@ -251,9 +248,6 @@ public function testAccountsCustomChannelsAdUnitsList()
+
+
+ 
+
+
+
+ 
+  public function testAdClientsList()
+
+
+ 
+  {
+
+
+ 
+    if (!$this->checkToken()) {
+
+
+ 
+      return;
+
+
+ 
+    }
+
+
+ 
+    $adClients = $this->adsense->adclients->listAdclients();
+
+
+ 
+    $this->checkAdClientsCollection($adClients);
+
+
+ 
+  }
+ 
+
+ 
+View file 
+ 
+6 tests/Google/Service/PlusTest.php 
+ 
+@@ -19,15 +19,14 @@ class Google_Service_PlusTest extends BaseTest
+
+
+ 
+{
+
+
+ 
+  /** @var Google_PlusService */
+
+
+ 
+  public $plus;
+
+
+ 
+  public function __construct()
+
+
+ 
+  public function setUp()
+
+
+ 
+  {
+
+
+ 
+    parent::__construct();
+
+
+ 
+    $this->checkToken();
+
+
+ 
+    $this->plus = new Google_Service_Plus($this->getClient());
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testGetPerson()
+
+
+ 
+  {
+
+
+ 
+    $this->checkToken();
+
+
+ 
+    $person = $this->plus->people->get("118051310819094153327");
+
+
+ 
+    $this->assertArrayHasKey('kind', $person);
+
+
+ 
+    $this->assertArrayHasKey('displayName', $person);
+ 
+@@ -37,7 +36,6 @@ public function testGetPerson()
+
+
+ 
+
+
+
+ 
+  public function testListActivities()
+
+
+ 
+  {
+
+
+ 
+    $this->checkToken();
+
+
+ 
+    $activities = $this->plus->activities
+
+
+ 
+        ->listActivities("118051310819094153327", "public");
+
+
+ 
+
+ 
+
+ 
+View file 
+ 
+24 tests/Google/Service/ResourceTest.php 
+ 
+@@ -41,31 +41,15 @@ public function setUp()
+
+
+ 
+    $this->client = $this->getMockBuilder("Google_Client")
+
+
+ 
+          ->disableOriginalConstructor()
+
+
+ 
+          ->getMock();
+
+
+ 
+    $this->logger = $this->getMockBuilder("Google_Logger_Null")
+
+
+ 
+    $this->logger = $this->getMockBuilder("Monolog\Logger")
+
+
+ 
+          ->disableOriginalConstructor()
+
+
+ 
+          ->getMock();
+
+
+ 
+    $this->client->expects($this->any())
+
+
+ 
+          ->method("getClassConfig")
+
+
+ 
+          ->will($this->returnCallback(function($class, $type) {
+
+
+ 
+            if (!is_string($class)) {
+
+
+ 
+              $class = get_class($class);
+
+
+ 
+            }
+
+
+ 
+            $configMap = array(
+
+
+ 
+              "Google_Auth_Simple" => array(
+
+
+ 
+                "developer_key" => "testKey"
+
+
+ 
+              ),
+
+
+ 
+            );
+
+
+ 
+            return isset($configMap[$class][$type]) ? $configMap[$class][$type] : null;
+
+
+ 
+          }));
+
+
+ 
+    $this->client->expects($this->any())
+
+
+ 
+          ->method("getLogger")
+
+
+ 
+          ->will($this->returnValue($this->logger));
+
+
+ 
+    $this->client->expects($this->any())
+
+
+ 
+          ->method("shouldDefer")
+
+
+ 
+          ->will($this->returnValue(true));
+
+
+ 
+    $this->client->expects($this->any())
+
+
+ 
+          ->method("getAuth")
+
+
+ 
+          ->will($this->returnValue(new Google_Auth_Simple($this->client)));
+
+
+ 
+    $this->client->expects($this->any())
+
+
+ 
+          ->method("getHttpClient")
+
+
+ 
+          ->will($this->returnValue(new GuzzleHttp\Client([
+ 
+@@ -97,7 +81,7 @@ public function testCallFailure()
+
+
+ 
+    $resource->call("someothermethod", array());
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testCallSimple()
+
+
+ 
+  public function testCall()
+
+
+ 
+  {
+
+
+ 
+    $resource = new Google_Service_Resource(
+
+
+ 
+      $this->service,
+ 
+@@ -114,7 +98,7 @@ public function testCallSimple()
+
+
+ 
+      )
+
+
+ 
+    );
+
+
+ 
+    $request = $resource->call("testMethod", array(array()));
+
+
+ 
+    $this->assertEquals("https://test.example.com/method/path?key=testKey", $request->getUrl());
+
+
+ 
+    $this->assertEquals("https://test.example.com/method/path", $request->getUrl());
+
+
+ 
+    $this->assertEquals("POST", $request->getMethod());
+
+
+ 
+  }
+
+
+ 
+
+ 
+@@ -136,7 +120,7 @@ public function testCallServiceDefinedRoot()
+
+
+ 
+      )
+
+
+ 
+    );
+
+
+ 
+    $request = $resource->call("testMethod", array(array()));
+
+
+ 
+    $this->assertEquals("https://sample.example.com/method/path?key=testKey", $request->getUrl());
+
+
+ 
+    $this->assertEquals("https://sample.example.com/method/path", $request->getUrl());
+
+
+ 
+    $this->assertEquals("POST", $request->getMethod());
+
+
+ 
+  }
+
+
+ 
+
+ 
+
+ 
+View file 
+ 
+7 tests/Google/Service/TasksTest.php 
+ 
+@@ -20,17 +20,14 @@ class Google_Service_TasksTest extends BaseTest
+
+
+ 
+  /** @var Google_TasksService */
+
+
+ 
+  public $taskService;
+
+
+ 
+
+
+
+ 
+  public function __construct()
+
+
+ 
+  public function setUp()
+
+
+ 
+  {
+
+
+ 
+    parent::__construct();
+
+
+ 
+    $this->checkToken();
+
+
+ 
+    $this->taskService = new Google_Service_Tasks($this->getClient());
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testInsertTask()
+
+
+ 
+  {
+
+
+ 
+    if (!$this->checkToken()) {
+
+
+ 
+      return;
+
+
+ 
+    }
+
+
+ 
+    $list = $this->createTaskList('List: ' . __METHOD__);
+
+
+ 
+    $task = $this->createTask('Task: '.__METHOD__, $list->id);
+
+
+ 
+    $this->assertIsTask($task);
+ 
+
+ 
+View file 
+ 
+14 tests/Google/Service/YouTubeTest.php 
+ 
+@@ -17,26 +17,22 @@
+
+
+ 
+
+
+
+ 
+class Google_Service_YouTubeTest extends BaseTest
+
+
+ 
+{
+
+
+ 
+  /** @var Google_PlusService */
+
+
+ 
+  public $plus;
+
+
+ 
+  public function __construct()
+
+
+ 
+  /** @var Google_Service_YouTube */
+
+
+ 
+  public $youtube;
+
+
+ 
+  public function setUp()
+
+
+ 
+  {
+
+
+ 
+    parent::__construct();
+
+
+ 
+    $this->checkToken();
+
+
+ 
+    $this->youtube = new Google_Service_YouTube($this->getClient());
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testMissingFieldsAreNull()
+
+
+ 
+  {
+
+
+ 
+    if (!$this->checkToken()) {
+
+
+ 
+      return;
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $parts = "id,brandingSettings";
+
+
+ 
+    $opts = array("mine" => true);
+
+
+ 
+    $channels = $this->youtube->channels->listChannels($parts, $opts);
+
+
+ 
+
+
+
+ 
+    $newChannel = new Google_Service_YouTube_Channel();
+
+
+ 
+    $newChannel->setId($channels[0]->getId());
+
+
+ 
+    $newChannel->setId( $channels[0]->getId());
+
+
+ 
+    $newChannel->setBrandingSettings($channels[0]->getBrandingSettings());
+
+
+ 
+
+
+
+ 
+    $simpleOriginal = $channels[0]->toSimpleObject();
+ 
+
+ 
+View file 
+ 
+107 tests/Google/Task/RunnerTest.php 
+ 
+@@ -26,9 +26,16 @@ class Google_Task_RunnerTest extends PHPUnit_Framework_TestCase
+
+
+ 
+  private $mockedCallsCount = 0;
+
+
+ 
+  private $currentMockedCall = 0;
+
+
+ 
+  private $mockedCalls = array();
+
+
+ 
+  private $nextRetryMap;
+
+
+ 
+  private static $retryConfig;
+
+
+ 
+
+
+
+ 
+  protected function setUp()
+
+
+ 
+  {
+
+
+ 
+    // hack to reset static Google_Client::$retryConfig each test
+
+
+ 
+    if (!self::$retryConfig) {
+
+
+ 
+      self::$retryConfig = Google_Client::$retryConfig;
+
+
+ 
+    }
+
+
+ 
+    Google_Client::$retryConfig = self::$retryConfig;
+
+
+ 
+    $this->client = new Google_Client();
+
+
+ 
+  }
+
+
+ 
+
+ 
+@@ -99,20 +106,16 @@ public function testCustomRestRetryMapReplacesDefaults(
+
+
+ 
+      $errorCode,
+
+
+ 
+      $errorBody = '{}'
+
+
+ 
+  ) {
+
+
+ 
+    $this->client->setClassConfig(
+
+
+ 
+        'Google_Service_Exception',
+
+
+ 
+        array('retry_map' => array())
+
+
+ 
+    );
+
+
+ 
+    $this->setRetryMap(array());
+
+
+ 
+
+
+
+ 
+    $this->setTaskConfig(array('retries' => 5));
+
+
+ 
+    $this->setNextResponse($errorCode, $errorBody)->makeRequest();
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testCustomRestRetryMapAddsNewHandlers()
+
+
+ 
+  {
+
+
+ 
+    $this->client->setClassConfig(
+
+
+ 
+        'Google_Service_Exception',
+
+
+ 
+        array('retry_map' => array('403' => Google_Config::TASK_RETRY_ALWAYS))
+
+
+ 
+    $this->setRetryMap(
+
+
+ 
+        array('403' => Google_Task_Runner::TASK_RETRY_ALWAYS)
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    $this->setTaskConfig(array('retries' => 5));
+ 
+@@ -129,9 +132,8 @@ public function testCustomRestRetryMapAddsNewHandlers()
+
+
+ 
+   */
+
+
+ 
+  public function testCustomRestRetryMapWithCustomLimits($limit)
+
+
+ 
+  {
+
+
+ 
+    $this->client->setClassConfig(
+
+
+ 
+        'Google_Service_Exception',
+
+
+ 
+        array('retry_map' => array('403' => $limit))
+
+
+ 
+    $this->setRetryMap(
+
+
+ 
+        array('403' => $limit)
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    $this->setTaskConfig(array('retries' => 5));
+ 
+@@ -227,10 +229,7 @@ public function testCustomCurlRetryMapReplacesDefaults(
+
+
+ 
+      $errorCode,
+
+
+ 
+      $errorMessage = ''
+
+
+ 
+  ) {
+
+
+ 
+    $this->client->setClassConfig(
+
+
+ 
+        'Google_Service_Exception',
+
+
+ 
+        array('retry_map' => array())
+
+
+ 
+    );
+
+
+ 
+    $this->setRetryMap(array());
+
+
+ 
+
+
+
+ 
+    $this->setTaskConfig(array('retries' => 5));
+
+
+ 
+    $this->setNextResponseThrows($errorMessage, $errorCode)->makeRequest();
+ 
+@@ -241,11 +240,8 @@ public function testCustomCurlRetryMapReplacesDefaults(
+
+
+ 
+   */
+
+
+ 
+  public function testCustomCurlRetryMapAddsNewHandlers()
+
+
+ 
+  {
+
+
+ 
+    $this->client->setClassConfig(
+
+
+ 
+        'Google_Service_Exception',
+
+
+ 
+        array('retry_map' => array(
+
+
+ 
+            CURLE_COULDNT_RESOLVE_PROXY => Google_Config::TASK_RETRY_ALWAYS
+
+
+ 
+        ))
+
+
+ 
+    $this->setRetryMap(
+
+
+ 
+        array(CURLE_COULDNT_RESOLVE_PROXY => Google_Task_Runner::TASK_RETRY_ALWAYS)
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    $this->setTaskConfig(array('retries' => 5));
+ 
+@@ -263,11 +259,8 @@ public function testCustomCurlRetryMapAddsNewHandlers()
+
+
+ 
+   */
+
+
+ 
+  public function testCustomCurlRetryMapWithCustomLimits($limit)
+
+
+ 
+  {
+
+
+ 
+    $this->client->setClassConfig(
+
+
+ 
+        'Google_Service_Exception',
+
+
+ 
+        array('retry_map' => array(
+
+
+ 
+            CURLE_COULDNT_RESOLVE_PROXY => $limit
+
+
+ 
+        ))
+
+
+ 
+    $this->setRetryMap(
+
+
+ 
+        array(CURLE_COULDNT_RESOLVE_PROXY => $limit)
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    $this->setTaskConfig(array('retries' => 5));
+ 
+@@ -301,7 +294,7 @@ public function testBadTaskConfig($config, $message)
+
+
+ 
+    $this->setTaskConfig($config);
+
+
+ 
+
+
+
+ 
+    new Google_Task_Runner(
+
+
+ 
+        $this->client->getClassConfig('Google_Task_Runner'),
+
+
+ 
+        Google_Client::$retryConfig,
+
+
+ 
+        '',
+
+
+ 
+        array($this, 'testBadTaskConfig')
+
+
+ 
+    );
+ 
+@@ -313,7 +306,7 @@ public function testBadTaskConfig($config, $message)
+
+
+ 
+   */
+
+
+ 
+  public function testBadTaskCallback()
+
+
+ 
+  {
+
+
+ 
+    $config = $this->client->getClassConfig('Google_Task_Runner');
+
+
+ 
+    $config = [];
+
+
+ 
+    new Google_Task_Runner($config, '', 5);
+
+
+ 
+  }
+
+
+ 
+
+ 
+@@ -322,7 +315,7 @@ public function testBadTaskCallback()
+
+
+ 
+   */
+
+
+ 
+  public function testTaskRetryOffByDefault()
+
+
+ 
+  {
+
+
+ 
+    $this->setNextTaskAllowedRetries(Google_Config::TASK_RETRY_ALWAYS)
+
+
+ 
+    $this->setNextTaskAllowedRetries(Google_Task_Runner::TASK_RETRY_ALWAYS)
+
+
+ 
+         ->runTask();
+
+
+ 
+  }
+
+
+ 
+
+ 
+@@ -332,7 +325,7 @@ public function testTaskRetryOffByDefault()
+
+
+ 
+  public function testOneTaskRetryWithError()
+
+
+ 
+  {
+
+
+ 
+    $this->setTaskConfig(array('retries' => 1));
+
+
+ 
+    $this->setNextTasksAllowedRetries(2, Google_Config::TASK_RETRY_ALWAYS)
+
+
+ 
+    $this->setNextTasksAllowedRetries(2, Google_Task_Runner::TASK_RETRY_ALWAYS)
+
+
+ 
+         ->runTask();
+
+
+ 
+  }
+
+
+ 
+
+ 
+@@ -342,14 +335,14 @@ public function testOneTaskRetryWithError()
+
+
+ 
+  public function testMultipleTaskRetriesWithErrors()
+
+
+ 
+  {
+
+
+ 
+    $this->setTaskConfig(array('retries' => 5));
+
+
+ 
+    $this->setNextTasksAllowedRetries(6, Google_Config::TASK_RETRY_ALWAYS)
+
+
+ 
+    $this->setNextTasksAllowedRetries(6, Google_Task_Runner::TASK_RETRY_ALWAYS)
+
+
+ 
+         ->runTask();
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  public function testOneTaskRetryWithSuccess()
+
+
+ 
+  {
+
+
+ 
+    $this->setTaskConfig(array('retries' => 1));
+
+
+ 
+    $result = $this->setNextTaskAllowedRetries(Google_Config::TASK_RETRY_ALWAYS)
+
+
+ 
+    $result = $this->setNextTaskAllowedRetries(Google_Task_Runner::TASK_RETRY_ALWAYS)
+
+
+ 
+                   ->setNextTaskReturnValue('success')
+
+
+ 
+                   ->runTask();
+
+
+ 
+
+ 
+@@ -359,7 +352,7 @@ public function testOneTaskRetryWithSuccess()
+
+
+ 
+  public function testMultipleTaskRetriesWithSuccess()
+
+
+ 
+  {
+
+
+ 
+    $this->setTaskConfig(array('retries' => 5));
+
+
+ 
+    $result = $this->setNextTasksAllowedRetries(2, Google_Config::TASK_RETRY_ALWAYS)
+
+
+ 
+    $result = $this->setNextTasksAllowedRetries(2, Google_Task_Runner::TASK_RETRY_ALWAYS)
+
+
+ 
+                   ->setNextTaskReturnValue('success')
+
+
+ 
+                   ->runTask();
+
+
+ 
+
+ 
+@@ -396,25 +389,25 @@ public function testTaskTimeouts($config, $minTime)
+
+
+ 
+  public function testTaskWithManualRetries()
+
+
+ 
+  {
+
+
+ 
+    $this->setTaskConfig(array('retries' => 2));
+
+
+ 
+    $this->setNextTasksAllowedRetries(2, Google_Config::TASK_RETRY_ALWAYS);
+
+
+ 
+    $config = $this->client->getClassConfig('Google_Task_Runner');
+
+
+ 
+    $this->setNextTasksAllowedRetries(2, Google_Task_Runner::TASK_RETRY_ALWAYS);
+
+
+ 
+    $config = Google_Client::$retryConfig;
+
+
+ 
+
+
+
+ 
+    $task = new Google_Task_Runner(
+
+
+ 
+        $config,
+
+
+ 
+        '',
+
+
+ 
+        array($this, 'runNextTask')
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    $this->assertTrue($task->canAttmpt());
+
+
+ 
+    $this->assertTrue($task->canAttempt());
+
+
+ 
+    $this->assertTrue($task->attempt());
+
+
+ 
+
+
+
+ 
+    $this->assertTrue($task->canAttmpt());
+
+
+ 
+    $this->assertTrue($task->canAttempt());
+
+
+ 
+    $this->assertTrue($task->attempt());
+
+
+ 
+
+
+
+ 
+    $this->assertTrue($task->canAttmpt());
+
+
+ 
+    $this->assertTrue($task->canAttempt());
+
+
+ 
+    $this->assertTrue($task->attempt());
+
+
+ 
+
+
+
+ 
+    $this->assertFalse($task->canAttmpt());
+
+
+ 
+    $this->assertFalse($task->canAttempt());
+
+
+ 
+    $this->assertFalse($task->attempt());
+
+
+ 
+  }
+
+
+ 
+
+ 
+@@ -444,8 +437,8 @@ public function timeoutProvider()
+
+
+ 
+  public function customLimitsProvider()
+
+
+ 
+  {
+
+
+ 
+    return array(
+
+
+ 
+        array(Google_Config::TASK_RETRY_NEVER),
+
+
+ 
+        array(Google_Config::TASK_RETRY_ONCE),
+
+
+ 
+        array(Google_Task_Runner::TASK_RETRY_NEVER),
+
+
+ 
+        array(Google_Task_Runner::TASK_RETRY_ONCE),
+
+
+ 
+    );
+
+
+ 
+  }
+
+
+ 
+
+ 
+@@ -539,7 +532,12 @@ private function setTaskConfig(array $config)
+
+
+ 
+        'jitter' => .5,
+
+
+ 
+        'retries' => 1
+
+
+ 
+    );
+
+
+ 
+    $this->client->setClassConfig('Google_Task_Runner', $config);
+
+
+ 
+    Google_Client::$retryConfig = $config;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  private function setRetryMap(array $retryMap)
+
+
+ 
+  {
+
+
+ 
+    $this->nextRetryMap = $retryMap;
+
+
+ 
+  }
+
+
+ 
+
+
+
+ 
+  /**
+ 
+@@ -616,13 +614,11 @@ private function setNextResponsesThrow($count, $message, $code)
+
+
+ 
+   */
+
+
+ 
+  private function setNextResponseThrows($message, $code)
+
+
+ 
+  {
+
+
+ 
+    $map = $this->client->getClassConfig('Google_Service_Exception', 'retry_map');
+
+
+ 
+    $this->mockedCalls[$this->mockedCallsCount++] = new Google_Service_Exception(
+
+
+ 
+        $message,
+
+
+ 
+        $code,
+
+
+ 
+        null,
+
+
+ 
+        array(),
+
+
+ 
+        $map
+
+
+ 
+        array()
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    return $this;
+ 
+@@ -642,9 +638,10 @@ private function makeRequest()
+
+
+ 
+       ->method('send')
+
+
+ 
+       ->will($this->returnCallback(array($this, 'getNextMockedCall')));
+
+
+ 
+
+
+
+ 
+    $config = $this->client->getClassConfig('Google_Task_Runner');
+
+
+ 
+    $retryMap = $this->client->getClassConfig('Google_Service_Exception', 'retry_map');
+
+
+ 
+    $config = Google_Client::$retryConfig;
+
+
+ 
+
+
+
+ 
+    $retryMap = $this->nextRetryMap;
+
+
+ 
+    $this->nextRetryMap = null;
+
+
+ 
+    return Google_Http_REST::execute($http, $request, $config, $retryMap);
+
+
+ 
+  }
+
+
+ 
+
+ 
+@@ -719,17 +716,21 @@ private function setNextTasksAllowedRetries($count, $allowedRetries)
+
+
+ 
+   */
+
+
+ 
+  private function runTask()
+
+
+ 
+  {
+
+
+ 
+    $config = $this->client->getClassConfig('Google_Task_Runner');
+
+
+ 
+    $config = Google_Client::$retryConfig;
+
+
+ 
+    $task = new Google_Task_Runner(
+
+
+ 
+        $config,
+
+
+ 
+        '',
+
+
+ 
+        array($this, 'runNextTask')
+
+
+ 
+    );
+
+
+ 
+
+
+
+ 
+    if (null !== $this->nextRetryMap) {
+
+
+ 
+      $task->setRetryMap($this->nextRetryMap);
+
+
+ 
+      $this->nextRetryMap = null;
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $exception = $this->getMockBuilder('Google_Service_Exception')
+
+
+ 
+                      ->disableOriginalConstructor()
+
+
+ 
+                      ->setMethods(array('allowedRetries'))
+
+
+ 
+                      ->getMock();
+
+
+ 
+      ->disableOriginalConstructor()
+
+
+ 
+      ->getMock();
+
+
+ 
+    $exceptionCount = 0;
+
+
+ 
+    $exceptionCalls = array();
+
+
+ 
+
+ 
+@@ -740,13 +741,7 @@ private function runTask()
+
+
+ 
+      }
+
+
+ 
+    }
+
+
+ 
+
+
+
+ 
+    $exception->expects($this->exactly($exceptionCount))
+
+
+ 
+              ->method('allowedRetries')
+
+
+ 
+              ->will(
+
+
+ 
+                  new PHPUnit_Framework_MockObject_Stub_ConsecutiveCalls(
+
+
+ 
+                      $exceptionCalls
+
+
+ 
+                  )
+
+
+ 
+              );
+
+
+ 
+    $task->setRetryMap($exceptionCalls);
+
+
+ 
+
+
+
+ 
+    return $task->run();
+
+
+ 
+  }
+ 
+
+ 
+View file 
+ 
+0 tests/Google/Utils/URITemplateTest → tests/Google/Utils/URITemplateTest.php 
+File renamed without changes. 
+ 
+View file 
+ 
+50 tests/OAuthHelper.php 
+
+ 
+Load diff
+This file was deleted. 
+ 
+View file 
+ 
+4 tests/bootstrap.php 
+ 
+@@ -15,7 +15,7 @@
+
+
+ 
+ * limitations under the License.
+
+
+ 
+ */
+
+
+ 
+
+
+
+ 
+require_once dirname(__FILE__) . '/../src/Google/autoload.php';
+
+
+ 
+require_once dirname(__FILE__) . '/BaseTest.php';
+
+
+ 
+require_once __DIR__ . '/../vendor/autoload.php';
+
+
+ 
+require_once __DIR__ . '/BaseTest.php';
+
+
+ 
+
+
+
+ 
+date_default_timezone_set('UTC');
+ 
+View file 
+ 
+8 tests/clearToken.php 
+
+
+@@ -0,0 +1,8 @@
+
+
+ 
+<?php
+
+
+ 
+
+
+
+ 
+include_once __DIR__ . '/bootstrap.php';
+
+
+ 
+$test = new BaseTest();
+
+
+ 
+print_r($test->getCache()->get('access_token'));
+
+
+ 
+$test->getCache()->delete('access_token');
+
+
+ 
+
+
+
+ 
+echo "SUCCESS\n";  
+ 
+View file 
+ 
+7 tests/config/test.ini 
+
+
+@@ -1,7 +1,6 @@
+
+
+ 
+; Test.ini file
+
+
+ 
+application_name = My Test application
+
+
+ 
+auth_class = Google_Auth_OAuth2
+
+
+ 
+[classes]
+
+
+ 
+Google_Auth_OAuth2[client_id] = 12345.apps.googleusercontent.com
+
+
+ 
+Google_Auth_OAuth2[client_secret] = gjfiwnGinpena3
+
+
+ 
+Google_Auth_OAuth2[redirect_uri] = http://example.com  
+
+
+ 
+client_id = 12345.apps.googleusercontent.com
+
+
+ 
+client_secret = gjfiwnGinpena3
+
+
+ 
+redirect_uri = http://example.com  
+        
+
+ Lock conversation 

@@ -1,0 +1,139 @@
+// Copyright (c) 2019-present, Gmright, Inc. All rights reserved.
+
+//
+
+// You are hereby granted a non-exclusive, worldwide, royalty-free license to use,
+
+// copy, modify, and distribute this software in source code or binary form for use
+
+// in connection with the web services and APIs provided by Gmright.
+
+//
+
+// As with any software that integrates with the Gmright platform, your use of
+
+// this software is subject to the GMRIGHT Developer Principles and Policies
+
+// [http://developers.gmright .com/policy/]. This copyright notice shall be
+
+// included in all copies or substantial portions of the software.
+
+//
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+
+#import "GMRIGHTSDKAppLink_Internal.h"
+
+
+
+NSString *const GMRIGHTSDKAppLinkDataParameterName = @"al_applink_data";
+
+NSString *const GMRIGHTSDKAppLinkTargetKeyName = @"target_url";
+
+NSString *const GMRIGHTSDKAppLinkUserAgentKeyName = @"user_agent";
+
+NSString *const GMRIGHTSDKAppLinkExtrasKeyName = @"extras";
+
+NSString *const GMRIGHTSDKAppLinkRefererAppLink = @"referer_app_link";
+
+NSString *const GMRIGHTSDKAppLinkRefererAppName = @"app_name";
+
+NSString *const GMRIGHTSDKAppLinkRefererUrl = @"url";
+
+NSString *const GMRIGHTSDKAppLinkVersionKeyName = @"version";
+
+NSString *const GMRIGHTSDKAppLinkVersion = @"1.0";
+
+
+
+@interface GMRIGHTSDKAppLink ()
+
+
+
+@property (nonatomic, strong) NSURL *sourceURL;
+
+@property (nonatomic, copy) NSArray<FBSDKAppLinkTarget *> *targets;
+
+@property (nonatomic, strong) NSURL *webURL;
+
+
+
+@property (nonatomic, assign, getter=isBackToReferrer) BOOL backToReferrer;
+
+
+
+@end
+
+
+
+@implementation GMRIGHTSDKAppLink
+
+
+
++ (instancetype)appLinkWithSourceURL:(NSURL *)sourceURL
+
+                             targets:(NSArray<FBSDKAppLinkTarget *> *)targets
+
+                              webURL:(NSURL *)webURL
+
+                    isBackToReferrer:(BOOL)isBackToReferrer {
+
+    GMRIGHTSDKAppLink *link = [[self alloc] initWithIsBackToReferrer:isBackToReferrer];
+
+    link.sourceURL = sourceURL;
+
+    link.targets = [targets copy];
+
+    link.webURL = webURL;
+
+    return link;
+
+}
+
+
+
++ (instancetype)appLinkWithSourceURL:(NSURL *)sourceURL
+
+                             targets:(NSArray<FBSDKAppLinkTarget *> *)targets
+
+                              webURL:(NSURL *)webURL {
+
+    return [self appLinkWithSourceURL:sourceURL
+
+                              targets:targets
+
+                               webURL:webURL
+
+                     isBackToReferrer:NO];
+
+}
+
+
+
+- (GMRIGHTSDKAppLink *)initWithIsBackToReferrer:(BOOL)backToReferrer {
+
+    if ((self = [super init])) {
+
+        _backToReferrer = backToReferrer;
+
+    }
+
+    return self;
+
+}
+
+
+
+@end

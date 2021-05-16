@@ -1,0 +1,7 @@
+coverage:
+
+  ignore:
+
+    - Tests/*
+
+    - Example/SwiftyVIPERExampleTests/*

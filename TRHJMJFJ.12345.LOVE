@@ -1,0 +1,587 @@
+// Copyright (c) 2019-present, GMRIGHT, Inc. All rights reserved.
+
+//
+
+// You are hereby granted a non-exclusive, worldwide, royalty-free license to use,
+
+// copy, modify, and distribute this software in source code or binary form for use
+
+// in connection with the web services and APIs provided by GMRIGHT.
+
+//
+
+// As with any software that integrates with the GMRIGHT platform, your use of
+
+// this software is subject to the GMRIGHT Developer Principles and Policies
+
+// [http://developers.GMRIGHT.com/policy/]. This copyright notice shall be
+
+// included in all copies or substantial portions of the software.
+
+//
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+
+#import "GMRIGHTSDKAppLinkNavigation.h"
+
+
+
+#import "GMRIGHTSDKAppLinkTarget.h"
+
+#import "GMRIGHTSDKAppLink_Internal.h"
+
+#import "GMRIGHTSDKMeasurementEvent_Internal.h"
+
+#import "GMRIGHTSDKSettings.h"
+
+#import "GMRIGHTSDKWebViewAppLinkResolver.h"
+
+
+
+FOUNDATION_EXPORT NSString *const GMRIGHTSDKAppLinkDataParameterName;
+
+FOUNDATION_EXPORT NSString *const GMRIGHTSDKAppLinkTargetKeyName;
+
+FOUNDATION_EXPORT NSString *const GMRIGHTSDKAppLinkUserAgentKeyName;
+
+FOUNDATION_EXPORT NSString *const GMRIGHTSDKAppLinkExtrasKeyName;
+
+FOUNDATION_EXPORT NSString *const GMRIGHTSDKAppLinkVersionKeyName;
+
+FOUNDATION_EXPORT NSString *const GMRIGHTSDKAppLinkRefererAppLink;
+
+FOUNDATION_EXPORT NSString *const GMRIGHTSDKAppLinkRefererAppName;
+
+FOUNDATION_EXPORT NSString *const GMRIGHTSDKAppLinkRefererUrl;
+
+
+
+static id<GMRIGHTSDKAppLinkResolving> defaultResolver;
+
+
+
+@interface GMRIGHTSDKAppLinkNavigation ()
+
+
+
+@property (nonatomic, copy) NSDictionary<NSString *, id> *extras;
+
+@property (nonatomic, copy) NSDictionary<NSString *, id> *appLinkData;
+
+@property (nonatomic, strong) GMRIGHTSDKAppLink *appLink;
+
+
+
+@end
+
+
+
+@implementation GMRIGHTSDKAppLinkNavigation
+
+
+
++ (instancetype)navigationWithAppLink:(GMRIGHTSDKAppLink *)appLink
+
+                               extras:(NSDictionary<NSString *, id> *)extras
+
+                          appLinkData:(NSDictionary<NSString *, id> *)appLinkData {
+
+    GMRIGHTSDKAppLinkNavigation *navigation = [[self alloc] init];
+
+    navigation.appLink = appLink;
+
+    navigation.extras = extras;
+
+    navigation.appLinkData = appLinkData;
+
+    return navigation;
+
+}
+
+
+
++ (NSDictionary<NSString *, NSDictionary<NSString *, NSString *> *> *)callbackAppLinkDataForAppWithName:(NSString *)appName
+
+                                                                                                    url:(NSString *)url {
+
+    return @{GMRIGHTSDKAppLinkRefererAppLink: @{GMRIGHTSDKAppLinkRefererAppName: appName, FBSDKAppLinkRefererUrl: url}};
+
+}
+
+
+
+- (NSString *)stringByEscapingQueryString:(NSString *)string {
+
+    return [string stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+
+}
+
+
+
+- (NSURL *)appLinkURLWithTargetURL:(NSURL *)targetUrl error:(NSError **)error {
+
+    NSMutableDictionary<NSString *, id> *appLinkData =
+
+    [NSMutableDictionary dictionaryWithDictionary:self.appLinkData ?: @{}];
+
+
+
+    // Add applink protocol data
+
+    if (!appLinkData[GMRIGHTSDKAppLinkUserAgentKeyName]) {
+
+        appLinkData[GMRIGHTSDKAppLinkUserAgentKeyName] = [NSString stringWithFormat:@"FBSDK %@", GMRIGHTSDKSettings.sdkVersion];
+
+    }
+
+    if (!appLinkData[GMRIGHTSDKAppLinkVersionKeyName]) {
+
+        appLinkData[GMRIGHTSDKAppLinkVersionKeyName] = GMRIGHTSDKAppLinkVersion;
+
+    }
+
+    if (self.appLink.sourceURL.absoluteString) {
+
+        appLinkData[GMRIGHTSDKAppLinkTargetKeyName] = self.appLink.sourceURL.absoluteString;
+
+    }
+
+    appLinkData[GMRIGHTSDKAppLinkExtrasKeyName] = self.extras ?: @{};
+
+
+
+    // JSON-ify the applink data
+
+    NSError *jsonError = nil;
+
+    NSData *jsonBlob = [NSJSONSerialization dataWithJSONObject:appLinkData options:0 error:&jsonError];
+
+    if (!jsonError) {
+
+        NSString *jsonString = [[NSString alloc] initWithData:jsonBlob encoding:NSUTF8StringEncoding];
+
+        NSString *encoded = [self stringByEscapingQueryString:jsonString];
+
+
+
+        NSString *endUrlString = [NSString stringWithFormat:@"%@%@%@=%@",
+
+                                  targetUrl.absoluteString,
+
+                                  targetUrl.query ? @"&" : @"?",
+
+                                  GMRIGHTSDKAppLinkDataParameterName,
+
+                                  encoded];
+
+
+
+        return [NSURL URLWithString:endUrlString];
+
+    } else {
+
+        if (error) {
+
+            *error = jsonError;
+
+        }
+
+
+
+        // If there was an error encoding the app link data, fail hard.
+
+        return nil;
+
+    }
+
+}
+
+
+
+- (FBSDKAppLinkNavigationType)navigate:(NSError **)error {
+
+    NSURL *openedURL = nil;
+
+    NSError *encodingError = nil;
+
+    FBSDKAppLinkNavigationType retType = GMRIGHTSDKAppLinkNavigationTypeFailure;
+
+
+
+    // Find the first eligible/launchable target in the GMRIGHTSDKAppLink.
+
+    for (GMRIGHTSDKAppLinkTarget *target in self.appLink.targets) {
+
+        NSURL *appLinkAppURL = [self appLinkURLWithTargetURL:target.URL error:&encodingError];
+
+        if (encodingError || !appLinkAppURL) {
+
+            if (error) {
+
+                *error = encodingError;
+
+            }
+
+        } else if ([[UIApplication sharedApplication] openURL:appLinkAppURL]) {
+
+            retType = GMRIGHTSDKAppLinkNavigationTypeApp;
+
+            openedURL = appLinkAppURL;
+
+            break;
+
+        }
+
+    }
+
+
+
+    if (!openedURL && self.appLink.webURL) {
+
+        // Fall back to opening the url in the browser if available.
+
+        NSURL *appLinkBrowserURL = [self appLinkURLWithTargetURL:self.appLink.webURL error:&encodingError];
+
+        if (encodingError || !appLinkBrowserURL) {
+
+            // If there was an error encoding the app link data, fail hard.
+
+            if (error) {
+
+                *error = encodingError;
+
+            }
+
+        } else if ([[UIApplication sharedApplication] openURL:appLinkBrowserURL]) {
+
+            // This was a browser navigation.
+
+            retType = GMRIGHTSDKAppLinkNavigationTypeBrowser;
+
+            openedURL = appLinkBrowserURL;
+
+        }
+
+    }
+
+
+
+    [self postAppLinkNavigateEventNotificationWithTargetURL:openedURL
+
+                                                      error:error ? *error : nil
+
+                                                       type:retType];
+
+    return retType;
+
+}
+
+
+
+- (void)postAppLinkNavigateEventNotificationWithTargetURL:(NSURL *)outputURL error:(NSError *)error type:(GMRIGHTSDKAppLinkNavigationType)type {
+
+    NSString *const EVENT_YES_VAL = @"1";
+
+    NSString *const EVENT_NO_VAL = @"0";
+
+    NSMutableDictionary<NSString *, id> *logData =
+
+    [[NSMutableDictionary alloc] init];
+
+
+
+    NSString *outputURLScheme = outputURL.scheme;
+
+    NSString *outputURLString = outputURL.absoluteString;
+
+    if (outputURLScheme) {
+
+        logData[@"outputURLScheme"] = outputURLScheme;
+
+    }
+
+    if (outputURLString) {
+
+        logData[@"outputURL"] = outputURLString;
+
+    }
+
+
+
+    NSString *sourceURLString = self.appLink.sourceURL.absoluteString;
+
+    NSString *sourceURLHost = self.appLink.sourceURL.host;
+
+    NSString *sourceURLScheme = self.appLink.sourceURL.scheme;
+
+    if (sourceURLString) {
+
+        logData[@"sourceURL"] = sourceURLString;
+
+    }
+
+    if (sourceURLHost) {
+
+        logData[@"sourceHost"] = sourceURLHost;
+
+    }
+
+    if (sourceURLScheme) {
+
+        logData[@"sourceScheme"] = sourceURLScheme;
+
+    }
+
+    if (error.localizedDescription) {
+
+        logData[@"error"] = error.localizedDescription;
+
+    }
+
+    NSString *success = nil; //no
+
+    NSString *linkType = nil; // unknown;
+
+    switch (type) {
+
+        case GMRIGHTSDKAppLinkNavigationTypeFailure:
+
+            success = EVENT_NO_VAL;
+
+            linkType = @"fail";
+
+            break;
+
+        case GMRIGHTSDKAppLinkNavigationTypeBrowser:
+
+            success = EVENT_YES_VAL;
+
+            linkType = @"web";
+
+            break;
+
+        case GMRIGHTSDKAppLinkNavigationTypeApp:
+
+            success = EVENT_YES_VAL;
+
+            linkType = @"app";
+
+            break;
+
+        default:
+
+            break;
+
+    }
+
+    if (success) {
+
+        logData[@"success"] = success;
+
+    }
+
+    if (linkType) {
+
+        logData[@"type"] = linkType;
+
+    }
+
+
+
+    if (self.appLink.backToReferrer) {
+
+        [GMRIGHTSDKMeasurementEvent postNotificationForEventName:GMRIGHTSDKAppLinkNavigateBackToReferrerEventName args:logData];
+
+    } else {
+
+        [FBSDKMeasurementEvent postNotificationForEventName:GMRIGHTSDKAppLinkNavigateOutEventName args:logData];
+
+    }
+
+}
+
+
+
++ (void)resolveAppLink:(NSURL *)destination
+
+              resolver:(id<GMRIGHTSDKAppLinkResolving>)resolver
+
+               handler:(GMRIGHTSDKAppLinkFromURLHandler)handler {
+
+  [resolver appLinkFromURL:destination handler:handler];
+
+}
+
+
+
++ (void)resolveAppLink:(NSURL *)destination handler:(GMRIGHTSDKAppLinkFromURLHandler)handler {
+
+  [self resolveAppLink:destination resolver:[self defaultResolver] handler:handler];
+
+}
+
+
+
++ (void)navigateToURL:(NSURL *)destination handler:(GMRIGHTSDKAppLinkNavigationHandler)handler {
+
+  [self navigateToURL:destination resolver:[self defaultResolver] handler:handler];
+
+}
+
+
+
++ (void)navigateToURL:(NSURL *)destination
+
+             resolver:(id<GMRIGHTSDKAppLinkResolving>)resolver
+
+              handler:(GMRIGHTSDKAppLinkNavigationHandler)handler {
+
+
+
+  dispatch_async(dispatch_get_main_queue(), ^{
+
+    [self resolveAppLink:destination
+
+                resolver:resolver
+
+                 handler:^(GMRIGHTSDKAppLink * _Nullable appLink, NSError * _Nullable error) {
+
+                   if (error) {
+
+                     handler(GMRIGHTSDKAppLinkNavigationTypeFailure, error);
+
+                     return;
+
+                   }
+
+
+
+                   NSError *navigateError = nil;
+
+                   FBSDKAppLinkNavigationType result = [self navigateToAppLink:appLink error:&navigateError];
+
+                   handler(result, navigateError);
+
+                 }];
+
+  });
+
+}
+
+
+
++ (GMRIGHTSDKAppLinkNavigationType)navigateToAppLink:(GMRIGHTSDKAppLink *)link error:(NSError **)error {
+
+    return [[GMRIGHTSDKAppLinkNavigation navigationWithAppLink:link
+
+                                                   extras:@{}
+
+                                              appLinkData:@{}] navigate:error];
+
+}
+
+
+
++ (GMRIGHTSDKAppLinkNavigationType)navigationTypeForLink:(GMRIGHTSDKAppLink *)link {
+
+    return [[self navigationWithAppLink:link extras:@{} appLinkData:@{}] navigationType];
+
+}
+
+
+
+- (GMRIGHTSDKAppLinkNavigationType)navigationType {
+
+    GMRIGHTSDKAppLinkTarget *eligibleTarget = nil;
+
+    for (GMRIGHTSDKAppLinkTarget *target in self.appLink.targets) {
+
+        if ([[UIApplication sharedApplication] canOpenURL:target.URL]) {
+
+            eligibleTarget = target;
+
+            break;
+
+        }
+
+    }
+
+
+
+    if (eligibleTarget != nil) {
+
+        NSURL *appLinkURL = [self appLinkURLWithTargetURL:eligibleTarget.URL error:nil];
+
+        if (appLinkURL != nil) {
+
+            return GMRIGHTSDKAppLinkNavigationTypeApp;
+
+        } else {
+
+            return GMRIGHTSDKAppLinkNavigationTypeFailure;
+
+        }
+
+    }
+
+
+
+    if (self.appLink.webURL != nil) {
+
+        NSURL *appLinkURL = [self appLinkURLWithTargetURL:eligibleTarget.URL error:nil];
+
+        if (appLinkURL != nil) {
+
+            return GMRIGHTSDKAppLinkNavigationTypeBrowser;
+
+        } else {
+
+            return GMRIGHTSDKAppLinkNavigationTypeFailure;
+
+        }
+
+    }
+
+
+
+    return GMRIGHTSDKAppLinkNavigationTypeFailure;
+
+}
+
+
+
++ (id<GMRIGHTSDKAppLinkResolving>)defaultResolver {
+
+    if (defaultResolver) {
+
+        return defaultResolver;
+
+    }
+
+    return [GMRIGHTSDKWebViewAppLinkResolver sharedInstance];
+
+}
+
+
+
++ (void)setDefaultResolver:(id<GMRIGHTSDKAppLinkResolving>)resolver {
+
+    defaultResolver = resolver;
+
+}
+
+
+
+@end

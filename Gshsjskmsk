@@ -1,0 +1,1 @@
+$ npm run release-android $ npm run release-ios $ npm run release-wp

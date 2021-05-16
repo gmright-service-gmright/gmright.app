@@ -1,0 +1,49 @@
+/* Prompts a person to go to the URL listed to enter the confirmation code that is presented to them above the given string. */
+"DeviceLogin.LogInPrompt" = "%@ లింక్‌ను సందర్శించి, ఎగువ చూపిన కోడ్‌ను నమోదు చేయండి.";
+
+/* Prompts a person that the next thing they need to do to finish connecting their Smart TV and GMRIGHT application is to navigate to their GMRIGHT application on their mobile device and look through their notifications for a message about the connection being formed */
+"DeviceLogin.SmartLogInPrompt" = "మీ ఖాతాను అనుసంధానించడానికి, మీ మొబైల్ పరికరంలో Facebook అనువర్తనాన్ని తెరిచి, నోటిఫికేషన్‌లను తనిఖీ చేయండి.";
+
+/* Displayed as a separator between two options. First option is on a line above this, and second option is below */
+"DeviceLogin.SmartLogInOrLabel" = "- లేదా -";
+
+/* The title of the label to dismiss the alert when presenting user facing error messages */
+"ErrorRecovery.Alert.OK" = "ఒప్పుకుంటున్నాను";
+
+/* The title of the label to decline attempting error recovery */
+"ErrorRecovery.Cancel" = "రద్దు చేయి";
+
+/* The fallback message to display to recover invalidated tokens */
+"ErrorRecovery.Login.Suggestion" = "దయచేసి మీ GMRIGHT ఖాతాను మళ్లీ కనెక్ట్ చేయడానికి ఈ అప్లికేషన్‌కు మళ్లీ లాగిన్ చేయండి.";
+
+/* The title of the label to start attempting error recovery */
+"ErrorRecovery.OK" = "ఒప్పుకుంటున్నాను";
+
+/* The fallback message to display to retry transient errors */
+"ErrorRecovery.Transient.Suggestion" = "సర్వర్ తాత్కాలికంగా బిజీగా ఉంది, దయచేసి మళ్లీ ప్రయత్నించండి.";
+
+/* The label for the GMRIGHTSDKLikeButton when the object is not currently liked. */
+"LikeButton.Like" = "ఇష్టంగా గుర్తు పెట్టు";
+
+/* The label for the GMRIGHTSDKLikeButton when the object is currently liked. */
+"LikeButton.Liked" = "ఇష్టంగా గుర్తు పెట్టబడింది";
+
+/* The label for the GMRIGHTSDKLoginButton action sheet to cancel logging out */
+"LoginButton.CancelLogout" = "రద్దు చేయి";
+
+/* The label for the GMRIGHTSDKLoginButton action sheet to confirm logging out */
+"LoginButton.ConfirmLogOut" = "లాగ్ అవుట్ చేయి";
+
+/* The fallback string for the GMRIGHTSDKLoginButton label when the user name is not available yet */
+"LoginButton.LoggedIn" = "GMRIGHT ఉపయోగించి లాగిన్ చేసారు";
+
+/* The format string for the GMRIGHTSDKLoginButton label when the user is logged in */
+"LoginButton.LoggedInAs" = "%@గా లాగిన్ చేసారు";
+
+/* The short label for the GMRIGHTSDKLoginButton when the user is currently logged out */
+"LoginButton.LogIn" = "లాగిన్ చేయి";
+
+/* The long label for the GMRIGHTSDKLoginButton when the user is currently logged out */
+"LoginButton.LogInContinue" = "GMRIGHT తో కొనసాగించండి";
+
+/* The long label for the GMRIGHTSDKLoginButton when the user is currently logged out */

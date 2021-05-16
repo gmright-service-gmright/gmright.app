@@ -1,0 +1,81 @@
+
+
+Go to app
+
+
+
+Changelog
+
+
+
+This is what has changed at CircleCI recently. RSS Feed.
+
+
+
+Usage Warning Fix
+
+
+
+ 
+
+
+
+November 30, 2018
+
+
+
+What’s Fixed
+
+
+
+The usage warning banner for Free users has been updated to exclude build minutes from OSS projects.
+
+
+
+My Branches Fix
+
+
+
+ 
+
+
+
+November 30, 2018
+
+
+
+What’s Fixed
+
+
+
+The My Branches button on the Jobs or Workflows pages has been fixed to display all relevant branches.
+
+
+
+Orbs Inside Orbs
+
+
+
+ 
+
+
+
+November 30, 2018
+
+
+
+What’s New
+
+
+
+Orb elements can now be composed directly with elements of other orbs. For example, you can now have an orb that looks like the following:
+
+
+
+orbs: some-orb: some-ns/some-orb@volatile executors: my-executor: some-orb/their-executor commands: my-command: some-orb/their-command jobs: my-job: some-orb/their-job another-job: executor: my-executor steps: - my-command param1: "hello"
+
+
+
+Be able to even automatically #( ) 
+
+Sett_number -setting-sorting-and-missing-point-reautomatical build.11.0.1

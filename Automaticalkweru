@@ -1,0 +1,58 @@
+Date: Tue, 15 Dec 1998 08:03:10 -0400
+
+From: Horst von Brand <>
+
+Subject: Re: [PATCH] Support new egcs/pgcc -mpentium(pro) options
+
+Sender: linux-kernel-owner@vger.kernel.org
+
+Precedence: bulk
+
+List-ID: <linux-kernel.vger.kernel.org>
+
+X-Mailing-List: linux-kernel@vger.kernel.org
+
+X-Lkml-Link: https://lkml.org/lkml/1998/12/15/63
+
+Anthony Barbachan <barbacha@Hinako.AMBusiness.com> said:
+
+> On Sun, 13 Dec 1998, Horst von Brand wrote:
+
+[...]
+
+> > Both egcs and pgcc are based on gcc-2.8 snapshots, but are different
+
+> > branches. [...]
+
+> Perhaps you are thinking of a different pgcc than I am. The one I use is
+
+> from the Pentium GCC compiler group or something like that. I;ve seen
+
+> their announcements on freshmeat.net. The do not distribute sources, only
+
+> patches to egcs. (Latest patch for egcs 1.1.1) If you look on their web
+
+> site they even say they switched to egcs from gcc as their base compiler
+
+> platform.
+
+Didn't know about the base switch then.
+
+Thanks for the clarification!
+
+-- 
+
+Horst von Brand vonbrand@sleipnir.valparaiso.cl
+
+Casilla 9G, Viña del Mar, Chile +56 32 672616
+
+-
+
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+
+the body of a message to majordomo@vger.rutgers.edu
+
+Please read the FAQ at 
+
+http://www.tux.org/lkml/
+
